@@ -171,7 +171,7 @@
             const cat = document.getElementById('lib-new-cat').value || 'General';
             const pri = parseInt(document.getElementById('lib-new-pri').value) || 3;
             if(!name) return alert("Task name required");
-            data.tasks.push({name, cat, pri});
+            data.tasks.push({name, cat, pri, lastDone: null});
             save();
             renderLibrary();
             document.getElementById('lib-new-name').value = '';
@@ -215,7 +215,7 @@
                 entryCat = document.getElementById('new-cat').value || 'General';
                 entryPri = parseInt(document.getElementById('new-pri-manual').value) || 3;
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
-                if(document.getElementById('save-to-lib').checked) data.tasks.push({name: entryName, cat: entryCat, pri: entryPri});
+                if(document.getElementById('save-to-lib').checked) data.tasks.push({name: entryName, cat: entryCat, pri: entryPri, lastDone: new Date().toISOString()});
             } else if(selectVal.startsWith('todo-')) {
                 let id = selectVal.split('-')[1];
                 let todo = data.todos.find(t => t.id == id);
@@ -235,6 +235,7 @@
                 let name = selectVal.split('lib-')[1];
                 let lib = data.tasks.find(t => t.name == name);
                 entryName = lib.name; entryCat = lib.cat; entryPri = lib.pri;
+                lib.lastDone = new Date().toISOString(); // UPDATE LAST DONE
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
             }
             data.balance += reward;
@@ -272,12 +273,18 @@
         function emailReport() { window.location.href = `mailto:?subject=Productivity Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
         
         function renderLibrary() {
-            document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `
+            document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => {
+                let lastDoneText = "Never";
+                if(t.lastDone) {
+                    const days = Math.floor((new Date() - new Date(t.lastDone)) / 86400000);
+                    lastDoneText = days === 0 ? "Today" : days + "d ago";
+                }
+                return `
                 <div class="list-item">
-                    <span><strong>${t.name}</strong><br><small>${t.cat} | Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</small></span>
+                    <span><strong>${t.name}</strong><br><small>${t.cat} | Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</small><small style="color:var(--blue)">Last Done: ${lastDoneText}</small></span>
                     <button class="btn-ghost" style="width:auto; padding:5px; color:var(--red);" onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button>
-                </div>
-            `).join('') || "Library is empty.";
+                </div>`;
+            }).join('') || "Library is empty.";
         }
 
         function startFreeTime() { if(data.balance <= 0) return alert("Bank empty!"); document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
