@@ -9,25 +9,26 @@
         body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); font-size: 16px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .balance { font-size: 2.5rem; font-weight: bold; color: var(--blue); text-align: center; }
-        .btn { border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; }
+        .btn { border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.7; }
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-yellow { background: var(--yellow); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
         .hidden { display: none !important; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-size: 1rem; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
         .history-green { border-left-color: var(--green); background: #f0fff4; }
         .history-blue { border-left-color: var(--blue); background: #f0f7ff; }
         .history-yellow { border-left-color: var(--yellow); background: #fffdf0; }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .report-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; white-space: nowrap; }
+        .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; white-space: nowrap; cursor: pointer; }
         .tab.active { background: var(--blue); color: white; }
-        .pie-chart { width: 140px; height: 140px; border-radius: 50%; margin: 15px auto; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .legend { font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; padding: 8px; background: #fcfcfc; border-radius: 6px; }
-        .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 15px auto; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .legend { font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 10px; background: #fcfcfc; border-radius: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: middle; }
         .chart-section { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
     </style>
 </head>
@@ -36,8 +37,8 @@
     <div id="work-prompt-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px; text-align:center;">
             <h2>Daily Check-in</h2>
-            <p>Did you work your job today?</p>
-            <label>Hours Worked (e.g., 8.5)</label>
+            <p>Did you work your full-time job today?</p>
+            <label>Hours Worked (e.g. 8.5)</label>
             <input type="number" step="0.1" id="prompt-work-hours" placeholder="Total Hours">
             <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes, Log Shift (+20m)</button>
             <button class="btn btn-ghost" onclick="closeWorkPrompt()">No / Not Today</button>
@@ -106,24 +107,83 @@
             </div>
 
             <div class="card" style="background:#fffdf0; border: 1px solid var(--yellow);">
-                <h3>Full-Time Work</h3>
-                <label>Hours (e.g. 8)</label>
-                <input type="number" step="0.1" id="manual-work-hours" placeholder="Hours worked">
+                <h3>Full-Time Job</h3>
+                <label>Hours Worked</label>
+                <input type="number" step="0.1" id="manual-work-hours" placeholder="e.g. 8">
                 <button class="btn btn-yellow" onclick="logWorkShift(false)">Log Shift Manually (+20m)</button>
             </div>
-            
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
-    <div id="planner" class="hidden"><div class="card"><h2>Planner</h2><button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add</button><div id="add-todo-form" class="hidden"><input type="text" id="todo-name" placeholder="Name"><input list="category-list" id="todo-cat" placeholder="Cat"><input type="date" id="todo-date"><input type="number" id="todo-pri" value="3"><button class="btn btn-green" onclick="addTodo()">Save</button></div><hr><div id="todo-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="history" class="hidden"><div class="card"><h2>History</h2><input type="text" id="history-search" placeholder="Search..." oninput="renderHistory()"><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><button class="btn btn-blue" onclick="openLibModal()">+ New</button><hr><input type="text" id="lib-search" placeholder="Search..." oninput="renderLibrary()"><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="stats" class="hidden"><div class="card"><h2>Reports</h2><div class="report-tabs"><button class="tab active" id="tab-today" onclick="setReportTab('today')">Today</button><button class="tab" id="tab-week" onclick="setReportTab('week')">Week</button><button class="tab" id="tab-month" onclick="setReportTab('month')">Month</button></div><div id="report-content"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="lib-modal" class="modal-overlay hidden"><div class="card"><h3>Edit</h3><input type="hidden" id="lib-edit-index"><input type="text" id="lib-name"><input list="category-list" id="lib-cat"><input type="number" id="lib-pri"><button class="btn btn-green" onclick="saveLibraryItem()">Save</button><button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button></div></div>
+    <div id="planner" class="hidden">
+        <div class="card">
+            <h2>Task Planner</h2>
+            <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
+            <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                <input type="text" id="todo-name" placeholder="Task Name">
+                <input list="category-list" id="todo-cat" placeholder="Category">
+                <input type="date" id="todo-date">
+                <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
+                <label><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
+                <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
+            </div>
+            <hr>
+            <div id="todo-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="history" class="hidden">
+        <div class="card">
+            <h2>History</h2>
+            <input type="text" id="history-search" placeholder="Search..." oninput="renderHistory()" style="border: 2px solid var(--blue);">
+            <div id="history-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="manage-tasks" class="hidden">
+        <div class="card">
+            <h2>Task Library</h2>
+            <button class="btn btn-blue" onclick="openLibModal()">+ Add New Task</button>
+            <hr>
+            <input type="text" id="lib-search" placeholder="Search library..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
+            <div id="task-list-container"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="stats" class="hidden">
+        <div class="card">
+            <h2>Performance Report</h2>
+            <div class="report-tabs">
+                <button class="tab active" id="tab-today" onclick="setReportTab('today')">Today</button>
+                <button class="tab" id="tab-week" onclick="setReportTab('week')">Week</button>
+                <button class="tab" id="tab-month" onclick="setReportTab('month')">Month</button>
+                <button class="tab" id="tab-year" onclick="setReportTab('year')">Year</button>
+            </div>
+            <div id="report-content"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="lib-modal" class="modal-overlay hidden">
+        <div class="card" style="width:90%; max-width:400px;">
+            <h3 id="lib-modal-title">Edit Library</h3>
+            <input type="hidden" id="lib-edit-index">
+            <input type="text" id="lib-name" placeholder="Name">
+            <input list="category-list" id="lib-cat" placeholder="Category">
+            <label>Priority (1-5)</label><input type="number" id="lib-pri" value="3">
+            <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
+            <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
+        </div>
+    </div>
+
     <datalist id="category-list"></datalist>
 
     <script>
+        // --- DATA INITIALIZATION ---
         let rawData = JSON.parse(localStorage.getItem('prodAppData')) || {};
         let data = {
             balance: rawData.balance || 0,
@@ -136,7 +196,7 @@
         let blueTimerInt, workTimerInt, seconds = 0;
         let activeWorkSession = null;
         let currentTab = 'today';
-        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c', '#d35400'];
+        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c', '#d35400', '#34495e'];
 
         function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
         function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
@@ -144,11 +204,11 @@
         function showScreen(id) {
             document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+            if(id === 'log-activity') populateDropdown();
             if(id === 'manage-tasks') renderLibrary();
             if(id === 'history') renderHistory();
             if(id === 'stats') generateReport();
             if(id === 'planner') renderPlanner();
-            if(id === 'log-activity') populateDropdown();
             updateCategoryList();
         }
 
@@ -166,6 +226,7 @@
             } catch(e) {}
         }
 
+        // --- DAILY JOB WORK ---
         window.onload = () => {
             const today = new Date().toDateString();
             if (data.lastWorkCheck !== today) document.getElementById('work-prompt-modal').classList.remove('hidden');
@@ -176,14 +237,65 @@
 
         function logWorkShift(isFromPrompt) {
             const hours = isFromPrompt ? parseFloat(document.getElementById('prompt-work-hours').value) : parseFloat(document.getElementById('manual-work-hours').value);
-            if (!hours) return alert("Enter hours.");
+            if (!hours || hours <= 0) return alert("Please enter valid hours.");
             const mins = Math.round(hours * 60);
             data.balance += 20;
             data.logs.push({ name: "Work Shift", cat: "Job (Yellow)", reward: 20, timeSpent: mins, date: new Date().toISOString(), logId: Date.now(), isYellow: true });
             if (isFromPrompt) closeWorkPrompt(); else { save(); showScreen('home'); }
         }
 
-        // --- TIMER ENGINE ---
+        // --- LIBRARY LOGIC ---
+        function renderLibrary() {
+            const q = document.getElementById('lib-search').value.toLowerCase();
+            const container = document.getElementById('task-list-container');
+            container.innerHTML = data.tasks.map((t, i) => {
+                if(t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) {
+                    return `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" style="padding:5px; width:auto;" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteLibItem(${i})">Del</button></div></div>`;
+                } return '';
+            }).join('');
+        }
+        function openLibModal(idx = -1) {
+            document.getElementById('lib-modal').classList.remove('hidden');
+            if(idx === -1) {
+                document.getElementById('lib-modal-title').innerText = "Add New Task";
+                document.getElementById('lib-edit-index').value = "-1";
+                document.getElementById('lib-name').value = ""; document.getElementById('lib-cat').value = ""; document.getElementById('lib-pri').value = "3";
+            } else {
+                const t = data.tasks[idx];
+                document.getElementById('lib-modal-title').innerText = "Edit Task";
+                document.getElementById('lib-edit-index').value = idx;
+                document.getElementById('lib-name').value = t.name; document.getElementById('lib-cat').value = t.cat; document.getElementById('lib-pri').value = t.pri;
+            }
+        }
+        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
+        function saveLibraryItem() {
+            const idx = parseInt(document.getElementById('lib-edit-index').value);
+            const item = { name: document.getElementById('lib-name').value, cat: document.getElementById('lib-cat').value || 'General', pri: parseInt(document.getElementById('lib-pri').value) || 3 };
+            if(!item.name) return;
+            if(idx === -1) data.tasks.push(item); else data.tasks[idx] = item;
+            save(); renderLibrary(); closeLibModal();
+        }
+        function deleteLibItem(i) { if(confirm("Delete task?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
+
+        // --- PLANNER LOGIC ---
+        function addTodo() {
+            const name = document.getElementById('todo-name').value; if(!name) return;
+            data.todos.push({ id: Date.now(), name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 });
+            save(); renderPlanner(); toggleElement('add-todo-form');
+        }
+        function renderPlanner() {
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m done</small></span><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Planner empty.";
+        }
+        function deleteTodo(id) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); }
+
+        // --- TIMER & LOGGING ---
+        function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-')); }
+        function populateDropdown() {
+            let opts = '<option value="new">+ One-Off Work</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
+            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
+            document.getElementById('task-select').innerHTML = opts; checkNewTask('new');
+        }
         function submitLog(mode) {
             const selectVal = document.getElementById('task-select').value;
             let session = { name: "", cat: "", pri: 3, isTodo: false, todoId: null };
@@ -218,13 +330,11 @@
                 showScreen('home');
             }
         }
-
         function stopWorkTimer() {
             clearInterval(workTimerInt);
             completeLogging(activeWorkSession, Math.ceil(seconds/60));
             document.getElementById('active-work-timer').classList.add('hidden');
         }
-
         function completeLogging(s, mins, finished = false) {
             let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
             if(s.isTodo) {
@@ -236,7 +346,6 @@
             save();
         }
 
-        // --- CORE UI ---
         function startFreeTime() {
             if(data.balance <= 0) return alert("Bank empty!");
             document.getElementById('active-blue-timer').classList.remove('hidden');
@@ -244,12 +353,13 @@
             blueTimerInt = setInterval(() => { seconds++; document.getElementById('blue-timer-display').innerText = Math.floor(seconds/60).toString().padStart(2,'0') + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000);
         }
         function stopFreeTime() { clearInterval(blueTimerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat:'Blue', reward:-used, timeSpent:used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-blue-timer').classList.add('hidden'); save(); }
-        
+
+        // --- REPORTS & HISTORY ---
         function renderHistory() {
             const q = document.getElementById('history-search').value.toLowerCase();
             document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q)).slice(0,30).map(l => 
                 `<div class="list-item ${l.isYellow ? 'history-yellow' : (l.reward >= 0 ? 'history-green' : 'history-blue')}">
-                    <span><strong>${l.name}</strong><br><small>${l.reward}m credit | ${l.timeSpent}m duration</small></span>
+                    <span><strong>${l.name}</strong><br><small>${l.reward}m reward | ${l.timeSpent}m duration</small></span>
                     <button class="btn-ghost" style="width:auto; color:var(--red);" onclick="undoLog(${l.logId})">Undo</button>
                 </div>`
             ).join('');
@@ -260,45 +370,64 @@
         }
 
         function setReportTab(t) { currentTab = t; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
+        
         function generateReport() {
             const now = new Date();
-            let earned = 0, spent = 0, yellowMins = 0, greenMins = 0;
+            let earned = 0, spent = 0, yellowMins = 0, greenMins = 0, cats = {};
             const filtered = data.logs.filter(l => {
                 const ld = new Date(l.date);
                 if(currentTab === 'today') return ld.toDateString() === now.toDateString();
                 if(currentTab === 'week') return (now - ld) < 7*86400000;
-                return ld.getMonth() === now.getMonth();
+                if(currentTab === 'month') return ld.getMonth() === now.getMonth();
+                return ld.getFullYear() === now.getFullYear();
             });
+
             filtered.forEach(l => {
                 if(l.isYellow) yellowMins += l.timeSpent;
-                else if(l.reward >= 0) { earned += l.reward; greenMins += l.timeSpent; }
-                else spent += Math.abs(l.reward);
+                else if(l.reward >= 0) { 
+                    earned += l.reward; greenMins += l.timeSpent; 
+                    cats[l.cat] = (cats[l.cat] || 0) + l.timeSpent;
+                } else { spent += Math.abs(l.reward); }
             });
+
             let bTot = earned + spent, uTot = yellowMins + greenMins + spent;
             let bSlices = bTot > 0 ? [`var(--green) 0deg ${(earned/bTot)*360}deg`, `var(--blue) ${(earned/bTot)*360}deg 360deg`] : ['#ddd 0deg 360deg'];
             let uSlices = uTot > 0 ? [`var(--yellow) 0deg ${(yellowMins/uTot)*360}deg`, `var(--green) ${(yellowMins/uTot)*360}deg ${((yellowMins+greenMins)/uTot)*360}deg`, `var(--blue) ${((yellowMins+greenMins)/uTot)*360}deg 360deg`] : ['#ddd 0deg 360deg'];
             
+            let catArr = Object.keys(cats), catTotal = Object.values(cats).reduce((a,b)=>a+b,0);
+            let cSlices = [], cur = 0;
+            catArr.forEach((c,i) => {
+                let start = (cur/catTotal)*360; cur += cats[c]; let end = (cur/catTotal)*360;
+                cSlices.push(`${chartColors[i%chartColors.length]} ${start}deg ${end}deg`);
+            });
+
             document.getElementById('report-content').innerHTML = `
-                <div class="chart-section"><h3>Bank Health</h3><div class="pie-chart" style="background: conic-gradient(${bSlices.join(',')})"></div></div>
-                <div class="chart-section"><h3>Day Usage</h3><div class="pie-chart" style="background: conic-gradient(${uSlices.join(',')})"></div>
-                <div class="legend"><div><span class="dot" style="background:var(--yellow)"></span>Job: ${yellowMins}m</div><div><span class="dot" style="background:var(--green)"></span>Growth: ${greenMins}m</div><div><span class="dot" style="background:var(--blue)"></span>Leisure: ${spent}m</div></div></div>`;
+                <div class="chart-section">
+                    <h3>Bank Health</h3>
+                    <div class="pie-chart" style="background: conic-gradient(${bSlices.join(',')})"></div>
+                </div>
+                <div class="chart-section">
+                    <h3>Day Usage</h3>
+                    <div class="pie-chart" style="background: conic-gradient(${uSlices.join(',')})"></div>
+                    <div class="legend">
+                        <div><span class="dot" style="background:var(--yellow)"></span>Job: ${yellowMins}m</div>
+                        <div><span class="dot" style="background:var(--green)"></span>Growth: ${greenMins}m</div>
+                        <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>
+                    </div>
+                </div>
+                <div class="chart-section">
+                    <h3>Growth Breakdown</h3>
+                    ${catTotal > 0 ? `<div class="pie-chart" style="background: conic-gradient(${cSlices.join(',')})"></div>
+                    <div class="legend">${catArr.map((c,i)=>`<div><span class="dot" style="background:${chartColors[i%chartColors.length]}"></span>${c}: ${cats[c]}m</div>`).join('')}</div>` : '<p>No work logged.</p>'}
+                </div>
+                <hr><h3>Planner Tracking</h3>` + data.todos.map(t => `<div style="font-size:0.9rem;"><strong>${t.name}</strong>: ${t.timeInvested}m done</div>`).join('') || "No active projects.";
         }
 
-        function renderLibrary() { /* Same as previous version */ }
-        function openLibModal(idx) { /* Same as previous version */ }
-        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
-        function saveLibraryItem() { /* Same as previous version */ }
-        function renderPlanner() { /* Same as previous version */ }
-        function addTodo() { /* Same as previous version */ }
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
-        function populateDropdown() {
-            let opts = '<option value="new">+ One-Off Work</option>';
-            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
-            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
-            document.getElementById('task-select').innerHTML = opts; checkNewTask('new');
+        function updateCategoryList() { 
+            const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]); 
+            document.getElementById('category-list').innerHTML = Array.from(cats).filter(c=>c).map(c=>`<option value="${c}">`).join(''); 
         }
-        function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); }
-        function updateCategoryList() { /* Same as previous version */ }
     </script>
 </body>
 </html>
