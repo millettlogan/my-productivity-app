@@ -13,12 +13,14 @@
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
-        .hidden { display: none; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-top: 5px; margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin: 5px 0 10px 0; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
+        .history-green { border-left-color: var(--green); }
+        .history-blue { border-left-color: var(--blue); }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .search-box { border: 2px solid var(--blue); margin-bottom: 15px; }
-        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 10px auto; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 10px auto; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .legend { font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
     </style>
 </head>
@@ -31,7 +33,7 @@
         </div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small id="work-timer-status" style="color:var(--green); font-weight:bold;">Working...</small>
+            <small style="color:var(--green); font-weight:bold;">Currently Working:</small>
             <h3 id="work-timer-name" style="margin:5px 0;">Task</h3>
             <h2 id="work-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log Work</button>
@@ -56,31 +58,29 @@
     <div id="log-activity" class="hidden">
         <div class="card">
             <h2>Log Work</h2>
-            <label>What are you doing?</label>
+            <label>Task Selection</label>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
-                <input type="text" id="new-name" placeholder="Task Name">
+                <input type="text" id="new-name" placeholder="One-off Task Name">
                 <input list="category-list" id="new-cat" placeholder="Category">
                 <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5">
-                <label><input type="checkbox" id="save-to-lib"> Save to Library?</label>
+                <label><input type="checkbox" id="save-to-lib"> Add to Library permanently?</label>
             </div>
 
-            <div class="card" style="background:#f9f9f9; margin-top:10px;">
-                <label>Manual Minutes</label>
+            <div class="card" style="background:#f9f9f9;">
+                <label>Option A: Manual Entry (Mins)</label>
                 <input type="number" id="log-val" value="30">
-                <button class="btn btn-green" onclick="submitLog('manual')">Log Minutes</button>
+                <button class="btn btn-green" onclick="submitLog('manual')">Add Minutes</button>
             </div>
 
-            <div class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
-                <h3>Live Timer Options</h3>
-                <label><input type="checkbox" id="timer-sound" checked> Play sound alerts?</label>
-                <label>Alert every (minutes):</label>
+            <div class="card" style="background:#f0f7ff;">
+                <h3>Option B: Live Timer</h3>
+                <label><input type="checkbox" id="timer-sound" checked> Interval Audio Chime?</label>
                 <select id="timer-interval">
-                    <option value="15">15 Minutes</option>
-                    <option value="25" selected>25 Minutes (Pomodoro)</option>
-                    <option value="45">45 Minutes</option>
-                    <option value="60">60 Minutes</option>
+                    <option value="15">15m</option>
+                    <option value="25" selected>25m</option>
+                    <option value="60">60m</option>
                 </select>
                 <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Timer</button>
             </div>
@@ -93,13 +93,33 @@
             <h2>Task Library</h2>
             <button class="btn btn-blue" onclick="openLibModal()">+ Add New Task</button>
             <hr>
-            <input type="text" id="lib-search" class="search-box" placeholder="Search tasks..." oninput="renderLibrary()">
+            <input type="text" id="lib-search" placeholder="Search tasks..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
             <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
-    <div id="lib-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; display:flex; align-items:center; justify-content:center;">
+    <div id="history" class="hidden">
+        <div class="card">
+            <h2>Recent Logs</h2>
+            <div id="history-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="stats" class="hidden">
+        <div class="card">
+            <h2>Performance Report</h2>
+            <div class="nav-grid" style="margin-bottom:15px;">
+                <button class="btn-ghost" style="padding:5px" onclick="setReportTab('today')">Today</button>
+                <button class="btn-ghost" style="padding:5px" onclick="setReportTab('week')">Week</button>
+            </div>
+            <div id="report-content"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="lib-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px;">
             <h3 id="lib-modal-title">Edit Task</h3>
             <input type="hidden" id="lib-edit-index">
@@ -107,14 +127,12 @@
             <input list="category-list" id="lib-cat" placeholder="Category">
             <label>Priority (1-5)</label>
             <input type="number" id="lib-pri" value="3" min="1" max="5">
-            <button class="btn btn-green" onclick="saveLibraryItem()">Save Task</button>
-            <button class="btn btn-ghost" onclick="toggleElement('lib-modal')">Cancel</button>
+            <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
+            <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
         </div>
     </div>
 
     <div id="planner" class="hidden"><div class="card"><h2>Planner</h2><div id="todo-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="history" class="hidden"><div class="card"><h2>History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="stats" class="hidden"><div class="card"><h2>Reports</h2><div id="report-content"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
 
     <datalist id="category-list"></datalist>
 
@@ -130,51 +148,36 @@
 
         let blueTimerInt, workTimerInt, seconds = 0;
         let activeWorkSession = null;
+        let reportFilter = 'today';
+        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6'];
 
-        function save() { 
-            localStorage.setItem('prodAppData', JSON.stringify(data)); 
-            updateUI(); 
-        }
+        function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
 
         function playChime() {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
-            gain.gain.setValueAtTime(0, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
-            osc.start(); osc.stop(ctx.currentTime + 1);
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+                osc.start(); osc.stop(ctx.currentTime + 1);
+            } catch(e) {}
         }
 
         function showScreen(id) {
-            ['home', 'planner', 'log-activity', 'manage-tasks', 'stats', 'history'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             if(id === 'log-activity') populateDropdown();
             if(id === 'manage-tasks') renderLibrary();
             if(id === 'history') renderHistory();
             if(id === 'stats') generateReport();
+            updateCategoryList();
         }
 
-        // --- LIBRARY LOGIC ---
-        function renderLibrary() {
-            const q = document.getElementById('lib-search').value.toLowerCase();
-            const container = document.getElementById('task-list-container');
-            container.innerHTML = data.tasks.map((t, i) => {
-                if(t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) {
-                    return `<div class="list-item">
-                        <span><strong>${t.name}</strong><br><small>${t.cat} (Pri: ${t.pri})</small></span>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-ghost" style="padding:5px 10px; width:auto;" onclick="openLibModal(${i})">Edit</button>
-                            <button class="btn-ghost" style="padding:5px 10px; width:auto; color:var(--red);" onclick="deleteLibItem(${i})">Del</button>
-                        </div>
-                    </div>`;
-                }
-                return '';
-            }).join('');
-        }
-
+        // --- LIBRARY MODAL ---
         function openLibModal(index = -1) {
             document.getElementById('lib-modal').classList.remove('hidden');
             if(index === -1) {
@@ -192,6 +195,7 @@
                 document.getElementById('lib-pri').value = t.pri;
             }
         }
+        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
 
         function saveLibraryItem() {
             const idx = parseInt(document.getElementById('lib-edit-index').value);
@@ -201,18 +205,33 @@
                 pri: parseInt(document.getElementById('lib-pri').value) || 3,
                 lastDone: idx > -1 ? data.tasks[idx].lastDone : null
             };
-            if(!newItem.name) return alert("Name required");
+            if(!newItem.name) return;
             if(idx === -1) data.tasks.push(newItem);
             else data.tasks[idx] = newItem;
-            save(); renderLibrary(); toggleElement('lib-modal');
+            save(); renderLibrary(); closeLibModal();
         }
 
-        function deleteLibItem(i) { if(confirm("Delete task?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
+        function renderLibrary() {
+            const q = document.getElementById('lib-search').value.toLowerCase();
+            const container = document.getElementById('task-list-container');
+            container.innerHTML = data.tasks.map((t, i) => {
+                if(t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) {
+                    return `<div class="list-item">
+                        <span><strong>${t.name}</strong><br><small>${t.cat}</small></span>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-ghost" style="padding:5px; width:auto;" onclick="openLibModal(${i})">Edit</button>
+                            <button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button>
+                        </div>
+                    </div>`;
+                }
+                return '';
+            }).join('');
+        }
 
         // --- TIMER LOGIC ---
         function submitLog(mode) {
             const selectVal = document.getElementById('task-select').value;
-            let session = { name: "Task", cat: "General", pri: 3, useSound: document.getElementById('timer-sound').checked, interval: parseInt(document.getElementById('timer-interval').value) };
+            let session = { name: "Quick Task", cat: "General", pri: 3, useSound: document.getElementById('timer-sound').checked, interval: parseInt(document.getElementById('timer-interval').value) };
 
             if(selectVal === 'new') {
                 session.name = document.getElementById('new-name').value || "Quick Task";
@@ -237,10 +256,7 @@
                 workTimerInt = setInterval(() => {
                     seconds++;
                     document.getElementById('work-timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0');
-                    if(seconds > 0 && seconds % (session.interval * 60) === 0) {
-                        if(session.useSound) playChime();
-                        alert(`${session.interval} minutes reached! Take a breath or keep going.`);
-                    }
+                    if(seconds > 0 && seconds % (session.interval * 60) === 0) { if(session.useSound) playChime(); }
                 }, 1000);
                 showScreen('home');
             }
@@ -261,15 +277,42 @@
             save();
         }
 
-        // --- BOILERPLATE ---
+        // --- HISTORY & REPORTS ---
+        function renderHistory() {
+            document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => 
+                `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}">
+                    <span><strong>${l.name}</strong><br><small>${l.reward}m | ${l.timeSpent || 0}m work</small></span>
+                </div>`
+            ).join('');
+        }
+
+        function generateReport() {
+            const now = new Date(); let work = 0, cats = {};
+            const filtered = data.logs.filter(l => {
+                const ld = new Date(l.date);
+                return reportFilter === 'today' ? ld.toDateString() === now.toDateString() : (now-ld) < 7*86400000;
+            });
+            filtered.forEach(l => { if(l.reward > 0) { work += l.timeSpent; cats[l.cat] = (cats[l.cat] || 0) + l.timeSpent; } });
+            
+            let slices = [], total = Object.values(cats).reduce((a,b)=>a+b,0), curr = 0;
+            Object.keys(cats).forEach((c, i) => { 
+                let s = (curr/total)*360; curr += cats[c]; let e = (curr/total)*360;
+                slices.push(`${chartColors[i % 5]} ${s}deg ${e}deg`);
+            });
+
+            document.getElementById('report-content').innerHTML = `<h3>Total Work: ${work}m</h3>` + 
+                (total > 0 ? `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>` : '<p>No data</p>');
+        }
+        function setReportTab(t) { reportFilter = t; generateReport(); }
+
+        // --- SETUP ---
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
-        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function updateCategoryList() { const cats = new Set([...data.tasks.map(t=>t.cat), ...data.logs.map(l=>l.cat)]); document.getElementById('category-list').innerHTML = Array.from(cats).map(c => `<option value="${c}">`).join(''); }
         function populateDropdown() {
-            let sel = document.getElementById('task-select');
-            let opts = '<option value="new">+ New Task</option>';
+            let opts = '<option value="new">+ One-Off / New</option>';
             data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
             data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
-            sel.innerHTML = opts; checkNewTask('new');
+            document.getElementById('task-select').innerHTML = opts; checkNewTask('new');
         }
         function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); }
         function startFreeTime() { 
