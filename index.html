@@ -24,9 +24,10 @@
         .report-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
         .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; white-space: nowrap; }
         .tab.active { background: var(--blue); color: white; }
-        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 10px auto; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .legend { font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
-        .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 15px auto; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .legend { font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; padding: 8px; background: #fcfcfc; border-radius: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+        .chart-section { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
         </div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small style="color:var(--green); font-weight:bold;">Currently Working:</small>
+            <small style="color:var(--green); font-weight:bold;">Working On:</small>
             <h3 id="work-timer-name" style="margin:5px 0;">Task</h3>
             <h2 id="work-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log Work</button>
@@ -67,10 +68,10 @@
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
-                <input type="text" id="new-name" placeholder="Quick Task Name">
+                <input type="text" id="new-name" placeholder="Task Name">
                 <input list="category-list" id="new-cat" placeholder="Category">
                 <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5">
-                <label><input type="checkbox" id="save-to-lib"> Add to Library permanently?</label>
+                <label><input type="checkbox" id="save-to-lib"> Add to Library?</label>
             </div>
 
             <div class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
@@ -82,7 +83,7 @@
 
             <div class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
                 <h3>Live Timer Options</h3>
-                <label><input type="checkbox" id="timer-sound" checked> Play Interval Chime?</label>
+                <label><input type="checkbox" id="timer-sound" checked> Interval Sound?</label>
                 <select id="timer-interval">
                     <option value="15">15m</option>
                     <option value="25" selected>25m</option>
@@ -100,15 +101,14 @@
             <h2>Task Planner</h2>
             <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
             <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
-                <label>Task Name</label><input type="text" id="todo-name">
-                <label>Category</label><input list="category-list" id="todo-cat">
-                <label>Due Date</label><input type="date" id="todo-date">
+                <input type="text" id="todo-name" placeholder="Task Name">
+                <input list="category-list" id="todo-cat" placeholder="Category">
+                <input type="date" id="todo-date">
                 <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
-                <label style="font-size: 0.9rem; display:block; margin: 10px 0;"><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
+                <label><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
                 <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
             </div>
             <hr>
-            <h3>Active Planner Tasks</h3>
             <div id="todo-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -117,7 +117,7 @@
     <div id="history" class="hidden">
         <div class="card">
             <h2>History</h2>
-            <input type="text" id="history-search" placeholder="Search history..." oninput="renderHistory()" style="border: 2px solid var(--blue);">
+            <input type="text" id="history-search" placeholder="Search logs..." oninput="renderHistory()" style="border: 2px solid var(--blue);">
             <div id="history-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -126,7 +126,7 @@
     <div id="manage-tasks" class="hidden">
         <div class="card">
             <h2>Library</h2>
-            <button class="btn btn-blue" onclick="openLibModal()">+ Add Library Task</button>
+            <button class="btn btn-blue" onclick="openLibModal()">+ Add New Task</button>
             <hr>
             <input type="text" id="lib-search" placeholder="Search library..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
             <div id="task-list-container"></div>
@@ -136,7 +136,7 @@
 
     <div id="stats" class="hidden">
         <div class="card">
-            <h2>Reports</h2>
+            <h2>Performance Report</h2>
             <div class="report-tabs">
                 <button class="tab active" id="tab-today" onclick="setReportTab('today')">Today</button>
                 <button class="tab" id="tab-week" onclick="setReportTab('week')">Week</button>
@@ -150,12 +150,12 @@
 
     <div id="lib-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px;">
-            <h3 id="lib-modal-title">Edit Library Task</h3>
+            <h3 id="lib-modal-title">Edit Library</h3>
             <input type="hidden" id="lib-edit-index">
             <input type="text" id="lib-name" placeholder="Name">
             <input list="category-list" id="lib-cat" placeholder="Category">
-            <label>Priority (1-5)</label><input type="number" id="lib-pri" value="3" min="1" max="5">
-            <button class="btn btn-green" onclick="saveLibraryItem()">Save Change</button>
+            <label>Priority (1-5)</label><input type="number" id="lib-pri" value="3">
+            <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
             <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
         </div>
     </div>
@@ -175,7 +175,7 @@
         let blueTimerInt, workTimerInt, seconds = 0;
         let activeWorkSession = null;
         let currentTab = 'today';
-        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c', '#d35400'];
+        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c', '#d35400', '#34495e'];
 
         function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
         function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
@@ -191,7 +191,6 @@
             updateCategoryList();
         }
 
-        // --- AUDIO ENGINE ---
         function playChime() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -206,19 +205,13 @@
             } catch(e) {}
         }
 
-        // --- TASK LIBRARY ---
+        // --- LIBRARY ---
         function renderLibrary() {
             const q = document.getElementById('lib-search').value.toLowerCase();
             const container = document.getElementById('task-list-container');
             container.innerHTML = data.tasks.map((t, i) => {
                 if(t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) {
-                    return `<div class="list-item">
-                        <span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-ghost" style="padding:5px; width:auto;" onclick="openLibModal(${i})">Edit</button>
-                            <button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteLibItem(${i})">Del</button>
-                        </div>
-                    </div>`;
+                    return `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" style="padding:5px; width:auto;" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteLibItem(${i})">Del</button></div></div>`;
                 } return '';
             }).join('');
         }
@@ -243,7 +236,7 @@
             if(idx === -1) data.tasks.push(item); else data.tasks[idx] = item;
             save(); renderLibrary(); closeLibModal();
         }
-        function deleteLibItem(i) { if(confirm("Delete this from library?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
+        function deleteLibItem(i) { if(confirm("Delete task?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
 
         // --- PLANNER ---
         function addTodo() {
@@ -252,7 +245,7 @@
             save(); renderPlanner(); toggleElement('add-todo-form');
         }
         function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><br><small>Due: ${t.date || 'No date'} | ${t.timeInvested}m invested</small></span><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Planner empty.";
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m done</small></span><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Planner empty.";
         }
         function deleteTodo(id) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); }
 
@@ -277,18 +270,15 @@
                 let l = data.tasks.find(x => x.name == selectVal.split('lib-')[1]);
                 session.name = l.name; session.cat = l.cat; session.pri = l.pri;
             }
-            if(mode === 'manual') {
-                completeLogging(session, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked);
-                showScreen('home');
-            } else {
+            if(mode === 'manual') { completeLogging(session, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked); showScreen('home'); }
+            else {
                 activeWorkSession = session; activeWorkSession.useSound = document.getElementById('timer-sound').checked; activeWorkSession.interval = parseInt(document.getElementById('timer-interval').value);
                 seconds = 0; document.getElementById('work-timer-name').innerText = session.name;
                 document.getElementById('active-work-timer').classList.remove('hidden');
                 workTimerInt = setInterval(() => {
                     seconds++; document.getElementById('work-timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0');
                     if(seconds > 0 && seconds % (activeWorkSession.interval * 60) === 0 && activeWorkSession.useSound) playChime();
-                }, 1000);
-                showScreen('home');
+                }, 1000); showScreen('home');
             }
         }
         function stopWorkTimer() { clearInterval(workTimerInt); completeLogging(activeWorkSession, Math.ceil(seconds/60)); document.getElementById('active-work-timer').classList.add('hidden'); }
@@ -298,35 +288,29 @@
                 let t = data.todos.find(x => x.id == s.todoId); if(t) t.timeInvested += mins;
                 if(finished && t) { reward += (s.pri * 10); if(t.recurring) { let d = new Date(); d.setMonth(d.getMonth()+1); t.date = d.toISOString().split('T')[0]; t.timeInvested = 0; } else { data.todos = data.todos.filter(x => x.id != s.todoId); } }
             }
-            data.balance += reward; data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: new Date().toISOString(), logId: Date.now() });
-            save();
+            data.balance += reward; data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: new Date().toISOString(), logId: Date.now() }); save();
         }
 
-        // --- HISTORY & UNDO ---
+        // --- HISTORY ---
         function renderHistory() {
             const q = document.getElementById('history-search').value.toLowerCase();
             document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q)).slice(0,30).map(l => 
-                `<div class="list-item ${l.reward >= 0 ? 'history-green' : 'history-blue'}">
-                    <span><strong>${l.name}</strong><br><small>${l.reward}m | ${l.timeSpent || 0}m work</small></span>
-                    <button class="btn-ghost" style="width:auto; color:var(--red);" onclick="undoLog(${l.logId})">Undo</button>
-                </div>`
-            ).join('') || "No matching logs.";
+                `<div class="list-item ${l.reward >= 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><br><small>${l.reward}m earned | ${l.timeSpent || 0}m work</small></span><button class="btn-ghost" style="width:auto; color:var(--red);" onclick="undoLog(${l.logId})">Undo</button></div>`
+            ).join('');
         }
         function undoLog(id) {
             const idx = data.logs.findIndex(l => l.logId === id);
-            if(idx > -1) {
-                if(confirm("Undo this entry? Your balance will be reversed.")) {
-                    data.balance -= data.logs[idx].reward; // Reverses both + and -
-                    data.logs.splice(idx, 1);
-                    save(); renderHistory();
-                }
-            }
+            if(idx > -1 && confirm("Undo entry? Balance will be corrected.")) { data.balance -= data.logs[idx].reward; data.logs.splice(idx, 1); save(); renderHistory(); }
         }
 
-        // --- REPORTS ---
+        // --- DUAL REPORT GENERATOR ---
         function setReportTab(t) { currentTab = t; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
+        
         function generateReport() {
-            const now = new Date(); let earned = 0, spent = 0, work = 0, cats = {};
+            const now = new Date(); 
+            let earnedTotal = 0, spentTotal = 0, workMins = 0;
+            let workCats = {};
+
             const filtered = data.logs.filter(l => {
                 const ld = new Date(l.date);
                 if(currentTab === 'today') return ld.toDateString() === now.toDateString();
@@ -334,20 +318,63 @@
                 if(currentTab === 'month') return ld.getMonth() === now.getMonth() && ld.getFullYear() === now.getFullYear();
                 return ld.getFullYear() === now.getFullYear();
             });
-            filtered.forEach(l => { if(l.reward >= 0) { earned += l.reward; work += l.timeSpent; if(l.cat !== 'Bonus') cats[l.cat] = (cats[l.cat] || 0) + l.timeSpent; } else { spent += Math.abs(l.reward); } });
-            let total = Object.values(cats).reduce((a,b)=>a+b,0), curr = 0, slices = [], catArr = Object.keys(cats);
-            catArr.forEach((c, i) => { let s = (curr/total)*360; curr += cats[c]; let e = (curr/total)*360; slices.push(`${chartColors[i % chartColors.length]} ${s}deg ${e}deg`); });
-            document.getElementById('report-content').innerHTML = `<div style="text-align:center; margin-bottom:15px;"><small>Work Minutes</small><h2>${work}m</h2><div style="display:flex; justify-content:space-around; border-top:1px solid #eee; padding-top:10px;"><div><small>Earned</small><br><strong style="color:var(--green)">${earned}m</strong></div><div><small>Spent</small><br><strong style="color:var(--blue)">${spent}m</strong></div></div></div>${total > 0 ? `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div><div class="legend">${catArr.map((c,i)=>`<div><span class="dot" style="background:${chartColors[i%7]}"></span>${c}</div>`).join('')}</div>` : '<p style="text-align:center;">No work logged.</p>'}<hr><h3>Planner Progress</h3>` + data.todos.map(t => `<div style="font-size:0.9rem;"><strong>${t.name}</strong>: ${t.timeInvested}m</div>`).join('') || "No active projects.";
+
+            filtered.forEach(l => { 
+                if(l.reward >= 0) { 
+                    earnedTotal += l.reward; 
+                    workMins += l.timeSpent; 
+                    workCats[l.cat || 'Misc'] = (workCats[l.cat || 'Misc'] || 0) + l.timeSpent; 
+                } else { spentTotal += Math.abs(l.reward); } 
+            });
+
+            // CHART 1: GREEN VS BLUE (Balance Health)
+            let balanceTotal = earnedTotal + spentTotal;
+            let balSlices = [];
+            if(balanceTotal > 0) {
+                let eDeg = (earnedTotal / balanceTotal) * 360;
+                balSlices.push(`var(--green) 0deg ${eDeg}deg`, `var(--blue) ${eDeg}deg 360deg`);
+            }
+
+            // CHART 2: CATEGORY BREAKDOWN (Work Focus)
+            let totalWorkMins = Object.values(workCats).reduce((a,b)=>a+b,0);
+            let catSlices = [], currDeg = 0, catList = Object.keys(workCats);
+            catList.forEach((c, i) => {
+                let nextDeg = currDeg + (workCats[c] / totalWorkMins) * 360;
+                catSlices.push(`${chartColors[i % chartColors.length]} ${currDeg}deg ${nextDeg}deg`);
+                currDeg = nextDeg;
+            });
+
+            document.getElementById('report-content').innerHTML = `
+                <div style="text-align:center; margin-bottom:15px;">
+                    <small>Summary</small><h2>${workMins}m Productive</h2>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Bank Balance Health</h3>
+                    <div class="pie-chart" style="background: ${balanceTotal > 0 ? 'conic-gradient('+balSlices.join(',')+')' : '#ddd'}"></div>
+                    <div class="legend">
+                        <div><span class="dot" style="background:var(--green)"></span>Earned: ${earnedTotal}m</div>
+                        <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spentTotal}m</div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>Work Category Focus</h3>
+                    ${totalWorkMins > 0 ? `
+                        <div class="pie-chart" style="background: conic-gradient(${catSlices.join(',')})"></div>
+                        <div class="legend">${catList.map((c,i)=>`<div><span class="dot" style="background:${chartColors[i%chartColors.length]}"></span>${c}: ${workCats[c]}m</div>`).join('')}</div>
+                    ` : '<p>No work breakdown available.</p>'}
+                </div>
+
+                <hr><h3>Planner Tracking</h3>` + data.todos.map(t => `<div style="font-size:0.9rem;"><strong>${t.name}</strong>: ${t.timeInvested}m invested</div>`).join('') || "No active projects.";
         }
 
-        // --- BLUE TIMER ---
         function startFreeTime() {
-            if(data.balance <= 0) return alert("Empty bank!");
+            if(data.balance <= 0) return alert("Bank empty!");
             document.getElementById('active-blue-timer').classList.remove('hidden');
             seconds = 0; blueTimerInt = setInterval(() => { seconds++; document.getElementById('blue-timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000);
         }
         function stopFreeTime() { clearInterval(blueTimerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat:'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-blue-timer').classList.add('hidden'); save(); }
-
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
         function updateCategoryList() { const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]); document.getElementById('category-list').innerHTML = Array.from(cats).filter(c=>c).map(c=>`<option value="${c}">`).join(''); }
 
