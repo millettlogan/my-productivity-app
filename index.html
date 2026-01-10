@@ -22,6 +22,9 @@
         small { color: #7f8c8d; display: block; }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .ratio-tag { font-size: 0.7rem; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555; font-weight: bold; }
+        .search-box { margin-bottom: 10px; border: 2px solid var(--blue); }
+        .report-sec { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .report-sec:last-child { border: none; }
     </style>
 </head>
 <body>
@@ -77,7 +80,7 @@
                 <label>Task Name</label><input type="text" id="new-name">
                 <label>Category</label><input list="category-list" id="new-cat">
                 <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5" oninput="updateRateDisplay(this.value, 'new-rate')">
-                <div style="margin-top:5px;"><small id="new-rate">Earn Rate: 1.0x (1m work = 1m blue)</small></div>
+                <div style="margin-top:5px;"><small id="new-rate">Earn Rate: 1.0x</small></div>
                 <label style="font-size: 0.9rem; margin-top:10px;"><input type="checkbox" id="save-to-lib"> Add to permanent Library?</label>
             </div>
 
@@ -92,25 +95,41 @@
         </div>
     </div>
 
+    <div id="history" class="hidden">
+        <div class="card">
+            <h2>Recent History</h2>
+            <input type="text" id="history-search" class="search-box" placeholder="Filter history..." oninput="renderHistory()">
+            <div id="history-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
     <div id="manage-tasks" class="hidden">
         <div class="card">
             <h2>Task Library</h2>
             <button class="btn btn-blue" onclick="toggleElement('lib-add-form')">+ New Library Task</button>
             <div id="lib-add-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
-                <label>Task Name</label><input type="text" id="lib-new-name" placeholder="e.g. Email Processing">
-                <label>Category</label><input list="category-list" id="lib-new-cat">
-                <label>Priority (1-5)</label><input type="number" id="lib-new-pri" value="3" min="1" max="5" oninput="updateRateDisplay(this.value, 'lib-rate-preview')">
-                <div style="margin-top:5px;"><small id="lib-rate-preview">Earn Rate: 1.0x</small></div>
+                <input type="text" id="lib-new-name" placeholder="Task Name">
+                <input list="category-list" id="lib-new-cat" placeholder="Category">
+                <input type="number" id="lib-new-pri" value="3" min="1" max="5" oninput="updateRateDisplay(this.value, 'lib-rate-preview')">
+                <small id="lib-rate-preview">Earn Rate: 1.0x</small>
                 <button class="btn btn-blue" onclick="addDirectToLibrary()">Add to Library</button>
             </div>
             <hr>
+            <input type="text" id="lib-search" class="search-box" placeholder="Search tasks..." oninput="renderLibrary()">
             <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
-    <div id="history" class="hidden"><div class="card"><h2>Recent History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="stats" class="hidden"><div class="card"><h2>Weekly Report</h2><div id="report-content"></div><button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="stats" class="hidden">
+        <div class="card">
+            <h2>Performance Report</h2>
+            <div id="report-content"></div>
+            <button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
 
     <datalist id="category-list"></datalist>
 
@@ -158,7 +177,7 @@
 
         function updateRateDisplay(pri, targetId) {
             let rate = (0.4 + (pri * 0.2)).toFixed(1);
-            document.getElementById(targetId).innerText = `Earn Rate: ${rate}x (${rate}m blue per 1m work)`;
+            document.getElementById(targetId).innerText = `Earn Rate: ${rate}x`;
         }
 
         function updateCategoryList() {
@@ -170,12 +189,10 @@
             const name = document.getElementById('lib-new-name').value;
             const cat = document.getElementById('lib-new-cat').value || 'General';
             const pri = parseInt(document.getElementById('lib-new-pri').value) || 3;
-            if(!name) return alert("Task name required");
+            if(!name) return;
             data.tasks.push({name, cat, pri, lastDone: null});
-            save();
-            renderLibrary();
-            document.getElementById('lib-new-name').value = '';
-            toggleElement('lib-add-form');
+            save(); renderLibrary();
+            document.getElementById('lib-new-name').value = ''; toggleElement('lib-add-form');
         }
 
         function addTodo() {
@@ -187,7 +204,7 @@
         }
 
         function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><small>Due: ${t.date || '---'} | ${t.recurring ? '🔄 Recurring' : 'One-off'}</small><span class="ratio-tag">Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</span></span><button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "No active tasks.";
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><small>Due: ${t.date || '---'}</small></span><button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "No active tasks.";
         }
         function deleteTodo(id) { if(confirm("Remove task?")) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); } }
 
@@ -235,17 +252,20 @@
                 let name = selectVal.split('lib-')[1];
                 let lib = data.tasks.find(t => t.name == name);
                 entryName = lib.name; entryCat = lib.cat; entryPri = lib.pri;
-                lib.lastDone = new Date().toISOString(); // UPDATE LAST DONE
+                lib.lastDone = new Date().toISOString();
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
             }
             data.balance += reward;
             data.logs.push({ name: entryName, cat: entryCat, reward: reward, timeSpent: val, date: new Date().toISOString(), logId: Date.now() });
             save(); showScreen('home');
-            alert(`Earned ${reward}m Blue Time for ${val}m of work!`);
+            alert(`Earned ${reward}m Blue Time!`);
         }
 
         function renderHistory() {
-            document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><small>${l.reward > 0 ? '+' : ''}${l.reward}m Blue earned | ${l.timeSpent || 0}m work</small></span><button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-weight:bold;">UNDO</button></div>`).join('') || "No history.";
+            const query = document.getElementById('history-search').value.toLowerCase();
+            document.getElementById('history-list').innerHTML = [...data.logs].reverse()
+                .filter(l => l.name.toLowerCase().includes(query) || l.cat.toLowerCase().includes(query))
+                .slice(0,30).map(l => `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><small>${l.reward > 0 ? '+' : ''}${l.reward}m earned | ${l.timeSpent || 0}m work</small></span><button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-weight:bold;">UNDO</button></div>`).join('') || "No matching history.";
         }
 
         function deleteLog(logId) {
@@ -263,28 +283,37 @@
                 if(l.reward > 0) { green += l.reward; workTime += (l.timeSpent || 0); cats[l.cat] = (cats[l.cat] || 0) + (l.timeSpent || 0); }
                 else { blue += Math.abs(l.reward); }
             });
-            let html = `<h3>Weekly Totals</h3><p>Work: ${workTime}m | Blue Earned: ${green}m | Spent: ${blue}m</p><hr>`;
-            for(let c in cats) html += `<div style="display:flex; justify-content:space-between; padding:3px 0;"><span>${c}</span><span>${cats[c]}m</span></div>`;
-            html += `<hr><h3>Active Planner Tasks</h3>`;
-            html += data.todos.map(t => `<div style="display:flex; justify-content:space-between;"><span>${t.name} ${t.recurring?'🔄':''}</span><span>${t.timeInvested}m</span></div>`).join('') || "None";
+
+            const efficiency = workTime > 0 ? (green / workTime).toFixed(2) : 0;
+
+            let html = `<div class="report-sec"><h3>Weekly Summary</h3>
+                <p>Total Work: <strong>${workTime}m</strong></p>
+                <p>Blue Time Earned: <span style="color:var(--green)">${green}m</span></p>
+                <p>Blue Time Spent: <span style="color:var(--blue)">${blue}m</span></p>
+                <p>Efficiency Ratio: <strong>${efficiency}x</strong></p></div>`;
+            
+            html += `<div class="report-sec"><h3>Category Breakdown</h3>`;
+            for(let c in cats) html += `<div style="display:flex; justify-content:space-between; margin:4px 0;"><span>${c}</span><span>${cats[c]}m</span></div>`;
+            html += `</div><div class="report-sec"><h3>Planner Progress</h3>`;
+            html += data.todos.map(t => `<div style="margin-bottom:8px;"><strong>${t.name}</strong><br><small>Invested: ${t.timeInvested}m</small></div>`).join('') || "No active projects.";
+            html += `</div>`;
             container.innerHTML = html;
         }
 
         function emailReport() { window.location.href = `mailto:?subject=Productivity Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
         
         function renderLibrary() {
-            document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => {
+            const query = document.getElementById('lib-search').value.toLowerCase();
+            document.getElementById('task-list-container').innerHTML = data.tasks
+                .filter(t => t.name.toLowerCase().includes(query) || t.cat.toLowerCase().includes(query))
+                .map((t,i) => {
                 let lastDoneText = "Never";
                 if(t.lastDone) {
                     const days = Math.floor((new Date() - new Date(t.lastDone)) / 86400000);
                     lastDoneText = days === 0 ? "Today" : days + "d ago";
                 }
-                return `
-                <div class="list-item">
-                    <span><strong>${t.name}</strong><br><small>${t.cat} | Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</small><small style="color:var(--blue)">Last Done: ${lastDoneText}</small></span>
-                    <button class="btn-ghost" style="width:auto; padding:5px; color:var(--red);" onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button>
-                </div>`;
-            }).join('') || "Library is empty.";
+                return `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | ${lastDoneText}</small></span><button class="btn-ghost" style="width:auto; padding:5px; color:var(--red);" onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`;
+            }).join('') || "No tasks found.";
         }
 
         function startFreeTime() { if(data.balance <= 0) return alert("Bank empty!"); document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
