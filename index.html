@@ -5,32 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green vs Blue Ultimate</title>
     <style>
-        :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; }
+        :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; --yellow: #f39c12; }
         body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); font-size: 16px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .balance { font-size: 2.5rem; font-weight: bold; color: var(--blue); text-align: center; }
         .btn { border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; }
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
+        .btn-yellow { background: var(--yellow); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
         .hidden { display: none !important; }
         input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
         .history-green { border-left-color: var(--green); background: #f0fff4; }
         .history-blue { border-left-color: var(--blue); background: #f0f7ff; }
-        .todo-item { border-left-color: var(--gold); }
+        .history-yellow { border-left-color: var(--yellow); background: #fffdf0; }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .report-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
         .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; white-space: nowrap; }
         .tab.active { background: var(--blue); color: white; }
-        .pie-chart { width: 150px; height: 150px; border-radius: 50%; margin: 15px auto; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .pie-chart { width: 140px; height: 140px; border-radius: 50%; margin: 15px auto; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .legend { font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; padding: 8px; background: #fcfcfc; border-radius: 6px; }
-        .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
         .chart-section { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
+
+    <div id="work-prompt-modal" class="modal-overlay hidden">
+        <div class="card" style="width:90%; max-width:400px; text-align:center;">
+            <h2>Daily Check-in</h2>
+            <p>Did you work your full-time job today?</p>
+            <input type="number" id="prompt-work-mins" placeholder="How many minutes? (e.g. 480)">
+            <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes, Log Shift (+20m)</button>
+            <button class="btn btn-ghost" onclick="closeWorkPrompt()">No / Not Today</button>
+        </div>
+    </div>
 
     <div id="home">
         <div class="card">
@@ -39,8 +50,7 @@
         </div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small style="color:var(--green); font-weight:bold;">Working On:</small>
-            <h3 id="work-timer-name" style="margin:5px 0;">Task</h3>
+            <small id="work-timer-name">Task</small>
             <h2 id="work-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log Work</button>
         </div>
@@ -63,35 +73,29 @@
 
     <div id="log-activity" class="hidden">
         <div class="card">
-            <h2>Log Work</h2>
-            <label>Task Selection</label>
+            <h2>Log Activity</h2>
+            <label>Selection</label>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
                 <input type="text" id="new-name" placeholder="Task Name">
                 <input list="category-list" id="new-cat" placeholder="Category">
                 <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5">
-                <label><input type="checkbox" id="save-to-lib"> Add to Library?</label>
+                <label><input type="checkbox" id="save-to-lib"> Save to Library?</label>
             </div>
 
             <div class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
-                <label>Manual Minutes</label>
+                <label>Minutes</label>
                 <input type="number" id="log-val" value="30">
                 <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Finished?</label>
                 <button class="btn btn-green" onclick="submitLog('manual')">Log Minutes</button>
             </div>
 
-            <div class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
-                <h3>Live Timer Options</h3>
-                <label><input type="checkbox" id="timer-sound" checked> Interval Sound?</label>
-                <select id="timer-interval">
-                    <option value="15">15m</option>
-                    <option value="25" selected>25m</option>
-                    <option value="45">45m</option>
-                    <option value="60">60m</option>
-                </select>
-                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Timer</button>
+            <div class="card" style="background:#fffdf0; border: 1px solid var(--yellow);">
+                <h3>Full-Time Work</h3>
+                <button class="btn btn-yellow" onclick="logWorkShift(false)">Log Shift Manually (+20m)</button>
             </div>
+            
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
@@ -100,11 +104,11 @@
         <div class="card">
             <h2>Task Planner</h2>
             <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
-            <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
+            <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
                 <input type="text" id="todo-name" placeholder="Task Name">
                 <input list="category-list" id="todo-cat" placeholder="Category">
                 <input type="date" id="todo-date">
-                <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
+                <input type="number" id="todo-pri" value="3" min="1" max="5">
                 <label><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
                 <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
             </div>
@@ -117,7 +121,7 @@
     <div id="history" class="hidden">
         <div class="card">
             <h2>History</h2>
-            <input type="text" id="history-search" placeholder="Search logs..." oninput="renderHistory()" style="border: 2px solid var(--blue);">
+            <input type="text" id="history-search" placeholder="Search..." oninput="renderHistory()" style="border: 2px solid var(--blue);">
             <div id="history-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -128,7 +132,7 @@
             <h2>Library</h2>
             <button class="btn btn-blue" onclick="openLibModal()">+ Add New Task</button>
             <hr>
-            <input type="text" id="lib-search" placeholder="Search library..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
+            <input type="text" id="lib-search" placeholder="Search..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
             <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -136,7 +140,7 @@
 
     <div id="stats" class="hidden">
         <div class="card">
-            <h2>Performance Report</h2>
+            <h2>Reports</h2>
             <div class="report-tabs">
                 <button class="tab active" id="tab-today" onclick="setReportTab('today')">Today</button>
                 <button class="tab" id="tab-week" onclick="setReportTab('week')">Week</button>
@@ -154,7 +158,7 @@
             <input type="hidden" id="lib-edit-index">
             <input type="text" id="lib-name" placeholder="Name">
             <input list="category-list" id="lib-cat" placeholder="Category">
-            <label>Priority (1-5)</label><input type="number" id="lib-pri" value="3">
+            <input type="number" id="lib-pri" value="3">
             <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
             <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
         </div>
@@ -169,7 +173,7 @@
             tasks: rawData.tasks || [],
             logs: rawData.logs || [],
             todos: rawData.todos || [],
-            lastAllowance: rawData.lastAllowance || ""
+            lastWorkCheck: rawData.lastWorkCheck || ""
         };
 
         let blueTimerInt, workTimerInt, seconds = 0;
@@ -183,50 +187,62 @@
         function showScreen(id) {
             document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-            if(id === 'log-activity') populateDropdown();
             if(id === 'manage-tasks') renderLibrary();
             if(id === 'history') renderHistory();
             if(id === 'stats') generateReport();
             if(id === 'planner') renderPlanner();
+            if(id === 'log-activity') populateDropdown();
             updateCategoryList();
         }
 
-        function playChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.setValueAtTime(880, ctx.currentTime);
-                gain.gain.setValueAtTime(0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
-                osc.start(); osc.stop(ctx.currentTime + 1);
-            } catch(e) {}
+        // --- WORK SHIFT LOGIC ---
+        window.onload = () => {
+            const today = new Date().toDateString();
+            if (data.lastWorkCheck !== today) {
+                document.getElementById('work-prompt-modal').classList.remove('hidden');
+            }
+            updateUI();
+        };
+
+        function closeWorkPrompt() {
+            data.lastWorkCheck = new Date().toDateString();
+            save();
+            document.getElementById('work-prompt-modal').classList.add('hidden');
         }
 
-        // --- LIBRARY ---
+        function logWorkShift(isFromPrompt) {
+            const mins = isFromPrompt ? parseInt(document.getElementById('prompt-work-mins').value) : parseInt(document.getElementById('log-val').value);
+            if (!mins) return alert("Please enter minutes.");
+            
+            data.balance += 20; // Flat Stipend
+            data.logs.push({
+                name: "Work Shift",
+                cat: "Job (Yellow)",
+                reward: 20,
+                timeSpent: mins,
+                date: new Date().toISOString(),
+                logId: Date.now(),
+                isYellow: true
+            });
+            
+            if (isFromPrompt) closeWorkPrompt();
+            else { save(); showScreen('home'); }
+        }
+
+        // --- LIBRARY & PLANNER (RESTORED) ---
         function renderLibrary() {
             const q = document.getElementById('lib-search').value.toLowerCase();
             const container = document.getElementById('task-list-container');
-            container.innerHTML = data.tasks.map((t, i) => {
-                if(t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) {
-                    return `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" style="padding:5px; width:auto;" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteLibItem(${i})">Del</button></div></div>`;
-                } return '';
-            }).join('');
+            container.innerHTML = data.tasks.map((t, i) => (t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q)) ? `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" style="color:var(--red);" onclick="deleteLibItem(${i})">Del</button></div></div>` : '').join('');
         }
         function openLibModal(idx = -1) {
             document.getElementById('lib-modal').classList.remove('hidden');
-            if(idx === -1) {
-                document.getElementById('lib-modal-title').innerText = "Add New Task";
-                document.getElementById('lib-edit-index').value = "-1";
-                document.getElementById('lib-name').value = ""; document.getElementById('lib-cat').value = ""; document.getElementById('lib-pri').value = "3";
-            } else {
-                const t = data.tasks[idx];
-                document.getElementById('lib-modal-title').innerText = "Edit Task";
-                document.getElementById('lib-edit-index').value = idx;
-                document.getElementById('lib-name').value = t.name; document.getElementById('lib-cat').value = t.cat; document.getElementById('lib-pri').value = t.pri;
-            }
+            const editIdx = document.getElementById('lib-edit-index');
+            const name = document.getElementById('lib-name');
+            const cat = document.getElementById('lib-cat');
+            const pri = document.getElementById('lib-pri');
+            if(idx === -1) { editIdx.value = "-1"; name.value = ""; cat.value = ""; pri.value = "3"; }
+            else { const t = data.tasks[idx]; editIdx.value = idx; name.value = t.name; cat.value = t.cat; pri.value = t.pri; }
         }
         function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
         function saveLibraryItem() {
@@ -236,18 +252,17 @@
             if(idx === -1) data.tasks.push(item); else data.tasks[idx] = item;
             save(); renderLibrary(); closeLibModal();
         }
-        function deleteLibItem(i) { if(confirm("Delete task?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
+        function deleteLibItem(i) { if(confirm("Delete?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
 
-        // --- PLANNER ---
+        function renderPlanner() {
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.timeInvested}m done</small></span><button class="btn-ghost" style="color:var(--red);" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Empty.";
+        }
+        function deleteTodo(id) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); }
         function addTodo() {
             const name = document.getElementById('todo-name').value; if(!name) return;
             data.todos.push({ id: Date.now(), name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 });
             save(); renderPlanner(); toggleElement('add-todo-form');
         }
-        function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m done</small></span><button class="btn-ghost" style="padding:5px; width:auto; color:var(--red);" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Planner empty.";
-        }
-        function deleteTodo(id) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); }
 
         // --- LOGGING ---
         function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-')); }
@@ -270,18 +285,9 @@
                 let l = data.tasks.find(x => x.name == selectVal.split('lib-')[1]);
                 session.name = l.name; session.cat = l.cat; session.pri = l.pri;
             }
-            if(mode === 'manual') { completeLogging(session, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked); showScreen('home'); }
-            else {
-                activeWorkSession = session; activeWorkSession.useSound = document.getElementById('timer-sound').checked; activeWorkSession.interval = parseInt(document.getElementById('timer-interval').value);
-                seconds = 0; document.getElementById('work-timer-name').innerText = session.name;
-                document.getElementById('active-work-timer').classList.remove('hidden');
-                workTimerInt = setInterval(() => {
-                    seconds++; document.getElementById('work-timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0');
-                    if(seconds > 0 && seconds % (activeWorkSession.interval * 60) === 0 && activeWorkSession.useSound) playChime();
-                }, 1000); showScreen('home');
-            }
+            completeLogging(session, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked);
+            showScreen('home');
         }
-        function stopWorkTimer() { clearInterval(workTimerInt); completeLogging(activeWorkSession, Math.ceil(seconds/60)); document.getElementById('active-work-timer').classList.add('hidden'); }
         function completeLogging(s, mins, finished = false) {
             let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
             if(s.isTodo) {
@@ -291,94 +297,77 @@
             data.balance += reward; data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: new Date().toISOString(), logId: Date.now() }); save();
         }
 
-        // --- HISTORY ---
+        // --- HISTORY & UNDO ---
         function renderHistory() {
             const q = document.getElementById('history-search').value.toLowerCase();
             document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q) || l.cat.toLowerCase().includes(q)).slice(0,30).map(l => 
-                `<div class="list-item ${l.reward >= 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><br><small>${l.reward}m earned | ${l.timeSpent || 0}m work</small></span><button class="btn-ghost" style="width:auto; color:var(--red);" onclick="undoLog(${l.logId})">Undo</button></div>`
+                `<div class="list-item ${l.isYellow ? 'history-yellow' : (l.reward >= 0 ? 'history-green' : 'history-blue')}">
+                    <span><strong>${l.name}</strong><br><small>${l.reward}m credit | ${l.timeSpent}m duration</small></span>
+                    <button class="btn-ghost" style="width:auto; color:var(--red);" onclick="undoLog(${l.logId})">Undo</button>
+                </div>`
             ).join('');
         }
         function undoLog(id) {
             const idx = data.logs.findIndex(l => l.logId === id);
-            if(idx > -1 && confirm("Undo entry? Balance will be corrected.")) { data.balance -= data.logs[idx].reward; data.logs.splice(idx, 1); save(); renderHistory(); }
+            if(idx > -1 && confirm("Undo entry?")) { data.balance -= data.logs[idx].reward; data.logs.splice(idx, 1); save(); renderHistory(); }
         }
 
-        // --- DUAL REPORT GENERATOR ---
+        // --- REPORTS (TRIPLE CHART) ---
         function setReportTab(t) { currentTab = t; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
-        
         function generateReport() {
-            const now = new Date(); 
-            let earnedTotal = 0, spentTotal = 0, workMins = 0;
-            let workCats = {};
-
+            const now = new Date();
+            let earned = 0, spent = 0, yellowMins = 0, greenMins = 0, cats = {};
             const filtered = data.logs.filter(l => {
                 const ld = new Date(l.date);
                 if(currentTab === 'today') return ld.toDateString() === now.toDateString();
                 if(currentTab === 'week') return (now - ld) < 7*86400000;
-                if(currentTab === 'month') return ld.getMonth() === now.getMonth() && ld.getFullYear() === now.getFullYear();
+                if(currentTab === 'month') return ld.getMonth() === now.getMonth();
                 return ld.getFullYear() === now.getFullYear();
             });
 
-            filtered.forEach(l => { 
-                if(l.reward >= 0) { 
-                    earnedTotal += l.reward; 
-                    workMins += l.timeSpent; 
-                    workCats[l.cat || 'Misc'] = (workCats[l.cat || 'Misc'] || 0) + l.timeSpent; 
-                } else { spentTotal += Math.abs(l.reward); } 
+            filtered.forEach(l => {
+                if(l.isYellow) { yellowMins += l.timeSpent; }
+                else if(l.reward >= 0) { earned += l.reward; greenMins += l.timeSpent; cats[l.cat] = (cats[l.cat]||0) + l.timeSpent; }
+                else { spent += Math.abs(l.reward); }
             });
 
-            // CHART 1: GREEN VS BLUE (Balance Health)
-            let balanceTotal = earnedTotal + spentTotal;
-            let balSlices = [];
-            if(balanceTotal > 0) {
-                let eDeg = (earnedTotal / balanceTotal) * 360;
-                balSlices.push(`var(--green) 0deg ${eDeg}deg`, `var(--blue) ${eDeg}deg 360deg`);
+            // Bank Health Chart
+            let bTot = earned + spent;
+            let bSlices = bTot > 0 ? [`var(--green) 0deg ${(earned/bTot)*360}deg`, `var(--blue) ${(earned/bTot)*360}deg 360deg`] : ['#ddd 0deg 360deg'];
+
+            // Usage Chart (Yellow vs Green vs Blue)
+            let uTot = yellowMins + greenMins + spent;
+            let uSlices = [];
+            if(uTot > 0) {
+                let yD = (yellowMins/uTot)*360, gD = (greenMins/uTot)*360 + yD;
+                uSlices = [`var(--yellow) 0deg ${yD}deg`, `var(--green) ${yD}deg ${gD}deg`, `var(--blue) ${gD}deg 360deg`];
             }
 
-            // CHART 2: CATEGORY BREAKDOWN (Work Focus)
-            let totalWorkMins = Object.values(workCats).reduce((a,b)=>a+b,0);
-            let catSlices = [], currDeg = 0, catList = Object.keys(workCats);
-            catList.forEach((c, i) => {
-                let nextDeg = currDeg + (workCats[c] / totalWorkMins) * 360;
-                catSlices.push(`${chartColors[i % chartColors.length]} ${currDeg}deg ${nextDeg}deg`);
-                currDeg = nextDeg;
-            });
-
             document.getElementById('report-content').innerHTML = `
-                <div style="text-align:center; margin-bottom:15px;">
-                    <small>Summary</small><h2>${workMins}m Productive</h2>
-                </div>
-
                 <div class="chart-section">
-                    <h3>Bank Balance Health</h3>
-                    <div class="pie-chart" style="background: ${balanceTotal > 0 ? 'conic-gradient('+balSlices.join(',')+')' : '#ddd'}"></div>
+                    <h3>Bank Health (Earned vs Spent)</h3>
+                    <div class="pie-chart" style="background: conic-gradient(${bSlices.join(',')})"></div>
+                </div>
+                <div class="chart-section">
+                    <h3>Day Usage (Yellow/Green/Blue)</h3>
+                    <div class="pie-chart" style="background: conic-gradient(${uSlices.join(',')})"></div>
                     <div class="legend">
-                        <div><span class="dot" style="background:var(--green)"></span>Earned: ${earnedTotal}m</div>
-                        <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spentTotal}m</div>
+                        <div><span class="dot" style="background:var(--yellow)"></span>Job: ${yellowMins}m</div>
+                        <div><span class="dot" style="background:var(--green)"></span>Growth: ${greenMins}m</div>
+                        <div><span class="dot" style="background:var(--blue)"></span>Leisure: ${spent}m</div>
                     </div>
                 </div>
-
-                <div class="chart-section">
-                    <h3>Work Category Focus</h3>
-                    ${totalWorkMins > 0 ? `
-                        <div class="pie-chart" style="background: conic-gradient(${catSlices.join(',')})"></div>
-                        <div class="legend">${catList.map((c,i)=>`<div><span class="dot" style="background:${chartColors[i%chartColors.length]}"></span>${c}: ${workCats[c]}m</div>`).join('')}</div>
-                    ` : '<p>No work breakdown available.</p>'}
-                </div>
-
-                <hr><h3>Planner Tracking</h3>` + data.todos.map(t => `<div style="font-size:0.9rem;"><strong>${t.name}</strong>: ${t.timeInvested}m invested</div>`).join('') || "No active projects.";
+                <hr><h3>Planner Projects</h3>` + data.todos.map(t => `<div style="font-size:0.9rem;">${t.name}: ${t.timeInvested}m</div>`).join('') || "None.";
         }
 
         function startFreeTime() {
-            if(data.balance <= 0) return alert("Bank empty!");
+            if(data.balance <= 0) return alert("Empty!");
             document.getElementById('active-blue-timer').classList.remove('hidden');
             seconds = 0; blueTimerInt = setInterval(() => { seconds++; document.getElementById('blue-timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000);
         }
-        function stopFreeTime() { clearInterval(blueTimerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat:'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-blue-timer').classList.add('hidden'); save(); }
+        function stopFreeTime() { clearInterval(blueTimerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat:'Blue', reward:-used, timeSpent:used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-blue-timer').classList.add('hidden'); save(); }
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
         function updateCategoryList() { const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]); document.getElementById('category-list').innerHTML = Array.from(cats).filter(c=>c).map(c=>`<option value="${c}">`).join(''); }
-
-        updateUI();
     </script>
 </body>
 </html>
