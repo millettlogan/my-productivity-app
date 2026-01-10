@@ -21,7 +21,6 @@
         .todo-item { border-left-color: var(--gold); }
         small { color: #7f8c8d; display: block; }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        datalist { display: none; }
     </style>
 </head>
 <body>
@@ -73,13 +72,14 @@
             <label>What are you working on?</label>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
-            <div id="new-task-fields" class="hidden">
-                <label>Task Name</label><input type="text" id="new-name">
+            <div id="new-task-fields" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
+                <label>Task Name</label><input type="text" id="new-name" placeholder="e.g. Quick Email">
                 <label>Category</label><input list="category-list" id="new-cat" placeholder="Select or Type New">
-                <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3">
+                <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5">
+                <label style="font-size: 0.9rem; margin-top:10px;"><input type="checkbox" id="save-to-lib"> Add to permanent Library?</label>
             </div>
 
-            <div style="margin-top:15px;">
+            <div id="log-inputs" style="margin-top:15px;">
                 <label>Minutes Spent Working</label>
                 <input type="number" id="log-val" value="30">
                 <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark as Finished?</label>
@@ -90,24 +90,9 @@
         </div>
     </div>
 
-    <div id="history" class="hidden">
-        <div class="card">
-            <h2>Recent History</h2>
-            <div id="history-list"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
+    <div id="history" class="hidden"><div class="card"><h2>History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
     <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    
-    <div id="stats" class="hidden">
-        <div class="card">
-            <h2>Weekly Report</h2>
-            <div id="report-content"></div>
-            <button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
+    <div id="stats" class="hidden"><div class="card"><h2>Weekly Report</h2><div id="report-content"></div><button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
 
     <datalist id="category-list"></datalist>
 
@@ -123,12 +108,7 @@
 
         let timerInt, seconds = 0;
 
-        function save() { 
-            localStorage.setItem('prodAppData', JSON.stringify(data)); 
-            updateUI(); 
-            updateCategoryList();
-        }
-
+        function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); updateCategoryList(); }
         function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
 
         function showScreen(id) {
@@ -144,36 +124,21 @@
 
         function updateCategoryList() {
             const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]);
-            const list = document.getElementById('category-list');
-            list.innerHTML = Array.from(cats).filter(c => c && c !== 'Blue' && c !== 'Bonus').map(c => `<option value="${c}">`).join('');
+            document.getElementById('category-list').innerHTML = Array.from(cats).filter(c => c && c !== 'Blue' && c !== 'Bonus').map(c => `<option value="${c}">`).join('');
         }
 
         function addTodo() {
             const name = document.getElementById('todo-name').value;
             if(!name) return;
-            data.todos.push({
-                id: Date.now(),
-                name: name,
-                cat: document.getElementById('todo-cat').value || 'General',
-                date: document.getElementById('todo-date').value,
-                pri: parseInt(document.getElementById('todo-pri').value) || 3,
-                timeInvested: 0
-            });
+            data.todos.push({ id: Date.now(), name: name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, timeInvested: 0 });
             save(); renderPlanner();
-            document.getElementById('todo-name').value = '';
-            toggleElement('add-todo-form');
+            document.getElementById('todo-name').value = ''; toggleElement('add-todo-form');
         }
 
         function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `
-                <div class="list-item todo-item">
-                    <span><strong>${t.name}</strong><small>Due: ${t.date || '---'} | Invested: ${t.timeInvested}m</small></span>
-                    <button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button>
-                </div>
-            `).join('') || "No active planner tasks.";
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><small>Due: ${t.date || '---'} | Invested: ${t.timeInvested}m</small></span><button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "No active tasks.";
         }
-
-        function deleteTodo(id) { if(confirm("Remove from planner?")) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); } }
+        function deleteTodo(id) { if(confirm("Remove task?")) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); } }
 
         function populateDropdown() {
             let sel = document.getElementById('task-select');
@@ -181,6 +146,7 @@
             data.todos.forEach(t => options += `<option value="todo-${t.id}">[PLANNER] ${t.name}</option>`);
             data.tasks.forEach(t => options += `<option value="lib-${t.name}">${t.name}</option>`);
             sel.innerHTML = options;
+            checkNewTask('new');
         }
 
         function checkNewTask(val) {
@@ -198,16 +164,16 @@
                 entryCat = document.getElementById('new-cat').value || 'General';
                 entryPri = parseInt(document.getElementById('new-pri-manual').value) || 3;
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
+                if(document.getElementById('save-to-lib').checked) {
+                    data.tasks.push({name: entryName, cat: entryCat, pri: entryPri});
+                }
             } else if(selectVal.startsWith('todo-')) {
                 let id = selectVal.split('-')[1];
                 let todo = data.todos.find(t => t.id == id);
                 entryName = todo.name; entryCat = todo.cat; entryPri = todo.pri;
                 todo.timeInvested += val;
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
-                if(document.getElementById('is-complete').checked) {
-                    reward += (todo.pri * 10);
-                    data.todos = data.todos.filter(t => t.id != id);
-                }
+                if(document.getElementById('is-complete').checked) { reward += (todo.pri * 10); data.todos = data.todos.filter(t => t.id != id); }
             } else {
                 let name = selectVal.split('lib-')[1];
                 let lib = data.tasks.find(t => t.name == name);
@@ -230,13 +196,9 @@
         }
 
         function deleteLog(logId) {
-            if(confirm("Delete this entry? Balance will be adjusted.")) {
+            if(confirm("Undo this entry?")) {
                 const idx = data.logs.findIndex(l => l.logId === logId);
-                if(idx > -1) {
-                    data.balance -= data.logs[idx].reward;
-                    data.logs.splice(idx, 1);
-                    save(); renderHistory();
-                }
+                if(idx > -1) { data.balance -= data.logs[idx].reward; data.logs.splice(idx, 1); save(); renderHistory(); }
             }
         }
 
@@ -250,21 +212,16 @@
             });
             let html = `<h3>Weekly Totals</h3><p>Work: ${workTime}m | Earned: ${green}m | Spent: ${blue}m</p><hr>`;
             for(let c in cats) html += `<div style="display:flex; justify-content:space-between; padding:3px 0;"><span>${c}</span><span>${cats[c]}m</span></div>`;
-            html += `<hr><h3>In Progress (Planner)</h3>`;
-            html += data.todos.map(t => `<div style="display:flex; justify-content:space-between; font-size:0.9rem;"><span>${t.name}</span><span>${t.timeInvested}m so far</span></div>`).join('') || "<p>No active projects.</p>";
+            html += `<hr><h3>Active Planner Tasks</h3>`;
+            html += data.todos.map(t => `<div style="display:flex; justify-content:space-between;"><span>${t.name}</span><span>${t.timeInvested}m</span></div>`).join('') || "None";
             container.innerHTML = html;
         }
 
-        function emailReport() {
-            const report = document.getElementById('report-content').innerText;
-            window.location.href = `mailto:?subject=Productivity Report&body=${encodeURIComponent(report)}`;
-        }
-
-        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join('') || "Library empty."; }
+        function emailReport() { window.location.href = `mailto:?subject=Productivity Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
+        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat}</small></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join('') || "Empty."; }
         function startFreeTime() { if(data.balance <= 0) return alert("Bank empty!"); document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
         function stopFreeTime() { clearInterval(timerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat: 'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-timer').classList.add('hidden'); seconds=0; save(); }
         function updateUI() { document.getElementById('bal').innerText = data.balance + 'm'; }
-
         updateUI();
     </script>
 </body>
