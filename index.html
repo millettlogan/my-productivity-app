@@ -52,15 +52,12 @@
         <div class="card">
             <h2>Task Planner</h2>
             <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
-            
             <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
                 <label>Task Name</label><input type="text" id="todo-name" placeholder="Board Meeting">
                 <label>Category</label><input list="category-list" id="todo-cat">
                 <label>Due Date</label><input type="date" id="todo-date">
                 <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
-                <label style="font-size: 0.9rem; display:block; margin: 10px 0;">
-                    <input type="checkbox" id="todo-recurring"> Repeat Monthly?
-                </label>
+                <label style="font-size: 0.9rem; display:block; margin: 10px 0;"><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
                 <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
             </div>
             <hr>
@@ -95,15 +92,24 @@
         </div>
     </div>
 
-    <div id="history" class="hidden">
+    <div id="manage-tasks" class="hidden">
         <div class="card">
-            <h2>Recent History</h2>
-            <div id="history-list"></div>
+            <h2>Task Library</h2>
+            <button class="btn btn-blue" onclick="toggleElement('lib-add-form')">+ New Library Task</button>
+            <div id="lib-add-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
+                <label>Task Name</label><input type="text" id="lib-new-name" placeholder="e.g. Email Processing">
+                <label>Category</label><input list="category-list" id="lib-new-cat">
+                <label>Priority (1-5)</label><input type="number" id="lib-new-pri" value="3" min="1" max="5" oninput="updateRateDisplay(this.value, 'lib-rate-preview')">
+                <div style="margin-top:5px;"><small id="lib-rate-preview">Earn Rate: 1.0x</small></div>
+                <button class="btn btn-blue" onclick="addDirectToLibrary()">Add to Library</button>
+            </div>
+            <hr>
+            <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
-    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="history" class="hidden"><div class="card"><h2>Recent History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
     <div id="stats" class="hidden"><div class="card"><h2>Weekly Report</h2><div id="report-content"></div><button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
 
     <datalist id="category-list"></datalist>
@@ -132,14 +138,7 @@
             if(data.lastAllowance !== today) {
                 data.balance += 20; 
                 data.lastAllowance = today;
-                data.logs.push({
-                    name: 'Daily Allowance', 
-                    cat: 'Bonus', 
-                    reward: 20, 
-                    timeSpent: 0, 
-                    date: new Date().toISOString(), 
-                    logId: Date.now()
-                });
+                data.logs.push({ name: 'Daily Allowance', cat: 'Bonus', reward: 20, timeSpent: 0, date: new Date().toISOString(), logId: Date.now() });
                 save();
             }
         }
@@ -167,33 +166,28 @@
             document.getElementById('category-list').innerHTML = Array.from(cats).filter(c => c && c !== 'Blue' && c !== 'Bonus').map(c => `<option value="${c}">`).join('');
         }
 
+        function addDirectToLibrary() {
+            const name = document.getElementById('lib-new-name').value;
+            const cat = document.getElementById('lib-new-cat').value || 'General';
+            const pri = parseInt(document.getElementById('lib-new-pri').value) || 3;
+            if(!name) return alert("Task name required");
+            data.tasks.push({name, cat, pri});
+            save();
+            renderLibrary();
+            document.getElementById('lib-new-name').value = '';
+            toggleElement('lib-add-form');
+        }
+
         function addTodo() {
             const name = document.getElementById('todo-name').value;
             if(!name) return;
-            data.todos.push({
-                id: Date.now(),
-                name: name,
-                cat: document.getElementById('todo-cat').value || 'General',
-                date: document.getElementById('todo-date').value,
-                pri: parseInt(document.getElementById('todo-pri').value) || 3,
-                recurring: document.getElementById('todo-recurring').checked,
-                timeInvested: 0
-            });
+            data.todos.push({ id: Date.now(), name: name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 });
             save(); renderPlanner();
             document.getElementById('todo-name').value = ''; toggleElement('add-todo-form');
         }
 
         function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `
-                <div class="list-item todo-item">
-                    <span>
-                        <strong>${t.name}</strong>
-                        <small>Due: ${t.date || '---'} | ${t.recurring ? '🔄 Recurring' : 'One-off'}</small>
-                        <span class="ratio-tag">Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</span>
-                    </span>
-                    <button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button>
-                </div>
-            `).join('') || "No active tasks.";
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><small>Due: ${t.date || '---'} | ${t.recurring ? '🔄 Recurring' : 'One-off'}</small><span class="ratio-tag">Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</span></span><button class="btn-ghost" style="padding:5px; width:auto;" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "No active tasks.";
         }
         function deleteTodo(id) { if(confirm("Remove task?")) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); } }
 
@@ -235,9 +229,7 @@
                         nextDate.setMonth(nextDate.getMonth() + 1);
                         todo.date = nextDate.toISOString().split('T')[0];
                         todo.timeInvested = 0;
-                    } else {
-                        data.todos = data.todos.filter(t => t.id != id);
-                    }
+                    } else { data.todos = data.todos.filter(t => t.id != id); }
                 }
             } else {
                 let name = selectVal.split('lib-')[1];
@@ -245,34 +237,20 @@
                 entryName = lib.name; entryCat = lib.cat; entryPri = lib.pri;
                 reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
             }
-
             data.balance += reward;
             data.logs.push({ name: entryName, cat: entryCat, reward: reward, timeSpent: val, date: new Date().toISOString(), logId: Date.now() });
-            save(); 
-            showScreen('home');
+            save(); showScreen('home');
             alert(`Earned ${reward}m Blue Time for ${val}m of work!`);
         }
 
         function renderHistory() {
-            document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => `
-                <div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}">
-                    <span>
-                        <strong>${l.name}</strong>
-                        <small>${l.reward > 0 ? '+' : ''}${l.reward}m Blue earned | ${l.timeSpent || 0}m work</small>
-                    </span>
-                    <button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-weight:bold;">UNDO</button>
-                </div>
-            `).join('') || "No history.";
+            document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><small>${l.reward > 0 ? '+' : ''}${l.reward}m Blue earned | ${l.timeSpent || 0}m work</small></span><button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-weight:bold;">UNDO</button></div>`).join('') || "No history.";
         }
 
         function deleteLog(logId) {
-            if(confirm("Undo this entry? Your balance will be adjusted.")) {
+            if(confirm("Undo this entry?")) {
                 const idx = data.logs.findIndex(l => l.logId === logId);
-                if(idx > -1) {
-                    data.balance -= data.logs[idx].reward;
-                    data.logs.splice(idx, 1);
-                    save(); renderHistory();
-                }
+                if(idx > -1) { data.balance -= data.logs[idx].reward; data.logs.splice(idx, 1); save(); renderHistory(); }
             }
         }
 
@@ -292,12 +270,20 @@
         }
 
         function emailReport() { window.location.href = `mailto:?subject=Productivity Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
-        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong><br><small>Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</small></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join('') || "Empty."; }
+        
+        function renderLibrary() {
+            document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `
+                <div class="list-item">
+                    <span><strong>${t.name}</strong><br><small>${t.cat} | Rate: ${(0.4 + (t.pri * 0.2)).toFixed(1)}x</small></span>
+                    <button class="btn-ghost" style="width:auto; padding:5px; color:var(--red);" onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button>
+                </div>
+            `).join('') || "Library is empty.";
+        }
+
         function startFreeTime() { if(data.balance <= 0) return alert("Bank empty!"); document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
         function stopFreeTime() { clearInterval(timerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat: 'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-timer').classList.add('hidden'); seconds=0; save(); }
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
 
-        // Start Up sequence
         checkDailyAllowance();
         updateUI();
     </script>
