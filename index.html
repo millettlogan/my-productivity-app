@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green vs Blue Pro</title>
+    <title>Green vs Blue Planner</title>
     <style>
         :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; }
-        body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); }
+        body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); font-size: 16px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .balance { font-size: 2.5rem; font-weight: bold; color: var(--blue); text-align: center; }
-        .btn { border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; }
+        .btn { border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; }
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
         .hidden { display: none; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-top: 5px; font-size: 1rem; }
-        .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; }
-        .history-green { border-left-color: var(--green); }
-        .history-blue { border-left-color: var(--blue); }
-        small { color: #7f8c8d; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-top: 5px; font-size: 1rem; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
+        .todo-item { border-left-color: var(--gold); }
+        .urgent { background: #fff5f5; border-left-color: var(--red); }
+        small { color: #7f8c8d; display: block; }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
@@ -35,35 +35,53 @@
             <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Deduct Time</button>
         </div>
 
-        <button class="btn btn-green" onclick="showScreen('log-activity')">+ Log Activity</button>
+        <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Work / Progress</button>
         <button class="btn btn-blue" id="start-btn" onclick="startFreeTime()">Start Free Time</button>
-        <button class="btn btn-ghost" onclick="showScreen('history')">Activity History</button>
-        <button class="btn btn-ghost" onclick="showScreen('manage-tasks')">My Task Library</button>
-        <button class="btn btn-ghost" onclick="showScreen('stats')">Weekly Report</button>
+        
+        <div class="nav-grid">
+            <button class="btn btn-ghost" onclick="showScreen('planner')">📅 Planner</button>
+            <button class="btn btn-ghost" onclick="showScreen('history')">📜 History</button>
+            <button class="btn btn-ghost" onclick="showScreen('manage-tasks')">⚙️ Library</button>
+            <button class="btn btn-ghost" onclick="showScreen('stats')">📊 Report</button>
+        </div>
+    </div>
+
+    <div id="planner" class="hidden">
+        <div class="card">
+            <h2>Task Planner</h2>
+            <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
+            <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
+                <label>Task Name</label><input type="text" id="todo-name" placeholder="Board Meeting">
+                <label>Category</label><input type="text" id="todo-cat" placeholder="Work">
+                <label>Due Date</label><input type="date" id="todo-date">
+                <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
+                <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
+            </div>
+            <hr>
+            <h3>Active Tasks</h3>
+            <div id="todo-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
     </div>
 
     <div id="log-activity" class="hidden">
         <div class="card">
-            <h2>What did you do?</h2>
-            <label>Select Saved Task</label>
+            <h2>Log Your Progress</h2>
+            <label>What are you working on?</label>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
-                <label>Task Name</label><input type="text" id="new-name" placeholder="e.g. Taxes">
-                <label>Category</label><input type="text" id="new-cat" placeholder="Work, Home, Fitness">
+                <label>Task Name</label><input type="text" id="new-name">
                 <label>Type</label>
-                <select id="new-type">
-                    <option value="timed">Timed (Earn per minute)</option>
-                    <option value="completion">Completion (One-off reward)</option>
-                </select>
-                <label>Priority (1-5)</label><input type="number" id="new-pri" min="1" max="5" value="3">
-                <label>Base Minutes (Target Reward)</label><input type="number" id="new-base" value="20">
-                <label><input type="checkbox" id="save-task" checked> Save to Library</label>
+                <select id="new-type"><option value="timed">Timed</option><option value="completion">One-off</option></select>
+                <label>Priority (1-5)</label><input type="number" id="new-pri" value="3">
+                <label>Reward (Min)</label><input type="number" id="new-base" value="20">
             </div>
 
-            <div id="log-input-area" style="margin-top:15px;">
-                <label id="val-label">Minutes Spent / Units Done</label>
+            <div style="margin-top:15px;">
+                <label>Minutes Spent Working</label>
                 <input type="number" id="log-val" value="30">
+                <label id="complete-check-label"><input type="checkbox" id="is-complete"> Mark as Finished?</label>
             </div>
 
             <button class="btn btn-green" onclick="submitLog()">Confirm & Earn</button>
@@ -71,186 +89,139 @@
         </div>
     </div>
 
-    <div id="history" class="hidden">
-        <div class="card">
-            <h2>Recent History</h2>
-            <p><small>Deleting an entry corrects your balance.</small></p>
-            <div id="history-list"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
-    <div id="manage-tasks" class="hidden">
-        <div class="card">
-            <h2>Task Library</h2>
-            <div id="task-list-container"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
+    <div id="history" class="hidden"><div class="card"><h2>History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    
     <div id="stats" class="hidden">
         <div class="card">
-            <h2>Weekly Breakdown</h2>
+            <h2>Weekly Report</h2>
             <div id="report-content"></div>
+            <button class="btn btn-blue" onclick="emailReport()">📧 Email This Report</button>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
     <script>
-        let data = JSON.parse(localStorage.getItem('prodAppData')) || {
-            balance: 0,
-            tasks: [],
-            logs: [],
-            lastAllowance: ""
-        };
+        let data = JSON.parse(localStorage.getItem('prodAppData')) || { balance: 0, tasks: [], logs: [], todos: [], lastAllowance: "" };
+        let timerInt, seconds = 0;
 
-        let timerInt;
-        let seconds = 0;
-
-        function save() { 
-            localStorage.setItem('prodAppData', JSON.stringify(data)); 
-            updateUI(); 
-        }
+        function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
+        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
 
         function showScreen(id) {
-            ['home', 'log-activity', 'manage-tasks', 'stats', 'history'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['home', 'planner', 'log-activity', 'manage-tasks', 'stats', 'history'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             if(id === 'log-activity') populateDropdown();
-            if(id === 'manage-tasks') renderLibrary();
+            if(id === 'planner') renderPlanner();
             if(id === 'history') renderHistory();
+            if(id === 'manage-tasks') renderLibrary();
             if(id === 'stats') generateReport();
         }
 
-        function checkDailyAllowance() {
-            const today = new Date().toLocaleDateString();
-            if(data.lastAllowance !== today) {
-                data.balance += 20; 
-                data.lastAllowance = today;
-                data.logs.push({name: 'Daily Allowance', cat: 'Bonus', reward: 20, date: new Date().toISOString(), type: 'green'});
-                save();
-            }
+        // --- PLANNER LOGIC ---
+        function addTodo() {
+            const name = document.getElementById('todo-name').value;
+            if(!name) return;
+            data.todos.push({
+                id: Date.now(),
+                name: name,
+                cat: document.getElementById('todo-cat').value || 'General',
+                date: document.getElementById('todo-date').value,
+                pri: parseInt(document.getElementById('todo-pri').value),
+                timeInvested: 0
+            });
+            document.getElementById('todo-name').value = '';
+            save(); renderPlanner();
+            toggleElement('add-todo-form');
         }
 
+        function renderPlanner() {
+            const container = document.getElementById('todo-list');
+            container.innerHTML = data.todos.map(t => `
+                <div class="list-item todo-item">
+                    <span><strong>${t.name}</strong><small>Due: ${t.date || 'No date'} | Work so far: ${t.timeInvested}m</small></span>
+                    <button class="btn-ghost" style="padding:5px 10px; width:auto;" onclick="deleteTodo(${t.id})">Remove</button>
+                </div>
+            `).join('') || "No active tasks.";
+        }
+        function deleteTodo(id) { data.todos = data.todos.filter(t => t.id !== id); save(); renderPlanner(); }
+
+        // --- LOGGING LOGIC ---
         function populateDropdown() {
             let sel = document.getElementById('task-select');
-            sel.innerHTML = '<option value="new">+ Add New Task</option>' + 
-                data.tasks.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-            checkNewTask('new');
+            let options = '<option value="new">+ Add New Entry</option>';
+            data.todos.forEach(t => options += `<option value="todo-${t.id}">[PLANNER] ${t.name}</option>`);
+            data.tasks.forEach(t => options += `<option value="lib-${t.name}">${t.name}</option>`);
+            sel.innerHTML = options;
         }
 
         function checkNewTask(val) {
             document.getElementById('new-task-fields').classList.toggle('hidden', val !== 'new');
+            document.getElementById('complete-check-label').classList.toggle('hidden', !val.startsWith('todo-'));
         }
 
         function submitLog() {
-            let task;
-            const isNew = document.getElementById('task-select').value === 'new';
-            const val = parseFloat(document.getElementById('log-val').value);
+            const val = parseInt(document.getElementById('log-val').value) || 0;
+            const selectVal = document.getElementById('task-select').value;
+            let entryName, entryCat, entryPri, reward = 0;
 
-            if(isNew) {
-                task = {
-                    name: document.getElementById('new-name').value || "Unnamed Task",
-                    cat: document.getElementById('new-cat').value || 'General',
-                    type: document.getElementById('new-type').value,
-                    pri: parseInt(document.getElementById('new-pri').value),
-                    base: parseInt(document.getElementById('new-base').value)
-                };
-                if(document.getElementById('save-task').checked) data.tasks.push(task);
+            if(selectVal === 'new') {
+                entryName = document.getElementById('new-name').value;
+                entryPri = parseInt(document.getElementById('new-pri').value);
+                entryCat = 'General';
+                reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
+            } else if(selectVal.startsWith('todo-')) {
+                let id = selectVal.split('-')[1];
+                let todo = data.todos.find(t => t.id == id);
+                entryName = todo.name; entryCat = todo.cat; entryPri = todo.pri;
+                todo.timeInvested += val;
+                reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
+                if(document.getElementById('is-complete').checked) {
+                    reward += (todo.pri * 10); // Completion bonus
+                    data.todos = data.todos.filter(t => t.id != id);
+                }
             } else {
-                task = data.tasks.find(t => t.name === document.getElementById('task-select').value);
-            }
-
-            let reward = 0;
-            if(task.type === 'timed') {
-                reward = Math.floor(val * (0.4 + (task.pri * 0.2)));
-            } else {
-                reward = Math.floor(task.base * (0.5 + (task.pri * 0.25)) * val);
+                let name = selectVal.split('-')[1];
+                let lib = data.tasks.find(t => t.name == name);
+                entryName = lib.name; entryCat = lib.cat; entryPri = lib.pri;
+                reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
             }
 
             data.balance += reward;
-            data.logs.push({ ...task, val, reward, date: new Date().toISOString(), logId: Date.now() });
-            save();
-            showScreen('home');
+            data.logs.push({ name: entryName, cat: entryCat, reward: reward, timeSpent: val, date: new Date().toISOString(), logId: Date.now() });
+            save(); showScreen('home');
         }
 
-        function renderLibrary() {
-            const container = document.getElementById('task-list-container');
-            container.innerHTML = data.tasks.map((t, i) => `
-                <div class="list-item">
-                    <span><strong>${t.name}</strong><br><small>${t.cat} | Pri: ${t.pri} | ${t.type}</small></span>
-                    <button onclick="deleteTask(${i})" style="color:var(--red); background:none; border:none; font-weight:bold;">DELETE</button>
-                </div>
-            `).join('') || "Library is empty.";
-        }
-
-        function deleteTask(i) {
-            data.tasks.splice(i, 1);
-            save();
-            renderLibrary();
-        }
-
-        function renderHistory() {
-            const container = document.getElementById('history-list');
-            const recentLogs = [...data.logs].reverse().slice(0, 20);
-            container.innerHTML = recentLogs.map((l, i) => `
-                <div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}">
-                    <span>
-                        <strong>${l.name}</strong> <small>(${new Date(l.date).toLocaleDateString()})</small><br>
-                        <small>${l.reward > 0 ? 'Earned' : 'Spent'}: ${Math.abs(l.reward)}m</small>
-                    </span>
-                    <button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-size:0.8rem;">REMOVE</button>
-                </div>
-            `).join('') || "No history yet.";
-        }
-
-        function deleteLog(logId) {
-            const index = data.logs.findIndex(l => l.logId === logId);
-            if(index > -1) {
-                data.balance -= data.logs[index].reward;
-                data.logs.splice(index, 1);
-                save();
-                renderHistory();
-            }
-        }
-
+        // --- STATS & EMAIL ---
         function generateReport() {
             const container = document.getElementById('report-content');
-            let green = 0, blue = 0;
+            let green = 0, blue = 0, workTime = 0;
             const cats = {};
             data.logs.filter(l => new Date(l.date) > new Date(Date.now() - 7*86400000)).forEach(l => {
-                if(l.reward > 0) { green += l.reward; cats[l.cat] = (cats[l.cat] || 0) + l.reward; }
-                else { blue += Math.abs(l.reward); }
+                if(l.reward > 0) { 
+                    green += l.reward; 
+                    workTime += (l.timeSpent || 0);
+                    cats[l.cat] = (cats[l.cat] || 0) + (l.timeSpent || 0); 
+                } else { blue += Math.abs(l.reward); }
             });
-            let html = `<p><b>Weekly Green:</b> ${green}m</p><p><b>Weekly Blue:</b> ${blue}m</p><hr>`;
-            for(let c in cats) html += `<div class="stat-row"><span>${c}</span><span>${cats[c]}m</span></div>`;
+            let html = `<h3>This Week</h3><p>Total Work Time: ${workTime}m</p><p>Blue Earned: ${green}m</p><p>Blue Spent: ${blue}m</p><hr>`;
+            for(let c in cats) html += `<div style="display:flex; justify-content:space-between;"><span>${c}</span><span>${cats[c]}m</span></div>`;
             container.innerHTML = html;
         }
 
-        function startFreeTime() {
-            if(data.balance <= 0) return alert("Bank empty!");
-            document.getElementById('active-timer').classList.remove('hidden');
-            document.getElementById('start-btn').disabled = true;
-            timerInt = setInterval(() => {
-                seconds++;
-                let m = Math.floor(seconds / 60), s = seconds % 60;
-                document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-            }, 1000);
+        function emailReport() {
+            const report = document.getElementById('report-content').innerText;
+            const subject = "Weekly Productivity Report - " + new Date().toLocaleDateString();
+            const body = encodeURIComponent("Here is my breakdown for the week:\n\n" + report);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
-        function stopFreeTime() {
-            clearInterval(timerInt);
-            let used = Math.ceil(seconds / 60);
-            data.balance -= used;
-            data.logs.push({ name: 'Free Time', cat: 'Blue', reward: -used, date: new Date().toISOString(), logId: Date.now() });
-            document.getElementById('active-timer').classList.add('hidden');
-            document.getElementById('start-btn').disabled = false;
-            seconds = 0;
-            save();
-        }
-
+        // --- (Rest of standard functions: history, timer, library) ---
+        function renderHistory() { document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,15).map(l => `<div class="list-item"><span><strong>${l.name}</strong><small>${l.reward}m earned | ${l.timeSpent || 0}m work</small></span></div>`).join(''); }
+        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join(''); }
+        function startFreeTime() { if(data.balance <= 0) return; document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
+        function stopFreeTime() { clearInterval(timerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-timer').classList.add('hidden'); seconds=0; save(); }
         function updateUI() { document.getElementById('bal').innerText = data.balance + 'm'; }
-
-        checkDailyAllowance();
         updateUI();
     </script>
 </body>
