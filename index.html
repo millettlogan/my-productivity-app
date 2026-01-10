@@ -9,7 +9,8 @@
         body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); font-size: 16px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .balance { font-size: 2.5rem; font-weight: bold; color: var(--blue); text-align: center; }
-        .btn { border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; }
+        .btn { border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; font-size: 1rem; transition: opacity 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-green { background: var(--green); color: white; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
@@ -18,17 +19,14 @@
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
         .history-green { border-left-color: var(--green); background: #f0fff4; }
         .history-blue { border-left-color: var(--blue); background: #f0f7ff; }
-        .todo-item { border-left-color: var(--gold); }
-        small { color: #7f8c8d; display: block; }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .search-box { margin-bottom: 10px; border: 2px solid var(--blue); }
         
-        /* Report Specific Styles */
-        .report-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
-        .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; white-space: nowrap; }
+        /* Report/Pie Styles */
+        .report-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; }
         .tab.active { background: var(--blue); color: white; }
         .pie-container { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
-        .pie-chart { width: 180px; height: 180px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .pie-chart { width: 150px; height: 150px; border-radius: 50%; }
         .legend { width: 100%; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .dot { width: 10px; height: 10px; border-radius: 2px; }
@@ -41,12 +39,23 @@
             <h3 style="margin:0; text-align:center;">Free Time Bank</h3>
             <div class="balance" id="bal">0m</div>
         </div>
-        <div id="active-timer" class="card hidden" style="border: 2px solid var(--blue);">
-            <h2 id="timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
+
+        <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
+            <small style="color:var(--green); font-weight:bold;">Currently Working On:</small>
+            <h3 id="work-timer-name" style="margin:5px 0;">Task Name</h3>
+            <h2 id="work-timer-display" style="text-align:center; font-size:2.5rem; margin:10px 0;">00:00</h2>
+            <button class="btn btn-green" onclick="stopWorkTimer()">Finish Work & Log</button>
+        </div>
+
+        <div id="active-blue-timer" class="card hidden" style="border: 2px solid var(--blue);">
+            <small style="color:var(--blue); font-weight:bold;">Enjoying Free Time:</small>
+            <h2 id="blue-timer-display" style="text-align:center; font-size:2.5rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Deduct Time</button>
         </div>
-        <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Work / Progress</button>
-        <button class="btn btn-blue" id="start-btn" onclick="startFreeTime()">Start Free Time</button>
+
+        <button class="btn btn-green" id="main-log-btn" onclick="showScreen('log-activity')">⚡ Log Work / Progress</button>
+        <button class="btn btn-blue" id="main-start-btn" onclick="startFreeTime()">Start Free Time</button>
+        
         <div class="nav-grid">
             <button class="btn btn-ghost" onclick="showScreen('planner')">📅 Planner</button>
             <button class="btn btn-ghost" onclick="showScreen('history')">📜 History</button>
@@ -55,85 +64,41 @@
         </div>
     </div>
 
-    <div id="planner" class="hidden">
-        <div class="card">
-            <h2>Task Planner</h2>
-            <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Future Task</button>
-            <div id="add-todo-form" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
-                <label>Task Name</label><input type="text" id="todo-name">
-                <label>Category</label><input list="category-list" id="todo-cat">
-                <label>Due Date</label><input type="date" id="todo-date">
-                <label>Priority (1-5)</label><input type="number" id="todo-pri" value="3" min="1" max="5">
-                <label style="font-size: 0.9rem; display:block; margin: 10px 0;"><input type="checkbox" id="todo-recurring"> Repeat Monthly?</label>
-                <button class="btn btn-green" onclick="addTodo()">Save to Planner</button>
-            </div>
-            <hr>
-            <div id="todo-list"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
     <div id="log-activity" class="hidden">
         <div class="card">
-            <h2>Log Your Progress</h2>
-            <label>What are you working on?</label>
+            <h2>Log Work</h2>
+            <label>Select Task</label>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
+
             <div id="new-task-fields" class="hidden" style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
                 <label>Task Name</label><input type="text" id="new-name">
                 <label>Category</label><input list="category-list" id="new-cat">
                 <label>Priority (1-5)</label><input type="number" id="new-pri-manual" value="3" min="1" max="5" oninput="updateRateDisplay(this.value, 'new-rate')">
                 <div style="margin-top:5px;"><small id="new-rate">Earn Rate: 1.0x</small></div>
-                <label style="font-size: 0.9rem; margin-top:10px;"><input type="checkbox" id="save-to-lib"> Add to Library?</label>
+                <label style="font-size: 0.9rem; margin-top:10px;"><input type="checkbox" id="save-to-lib"> Save to Library?</label>
             </div>
-            <div id="log-inputs" style="margin-top:15px;">
-                <label>Minutes Spent Working</label>
-                <input type="number" id="log-val" value="30">
-                <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Finished?</label>
+
+            <div style="margin-top:20px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 8px;">
+                    <label>Manual Entry (Minutes)</label>
+                    <input type="number" id="log-val" value="30">
+                    <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Finished?</label>
+                    <button class="btn btn-green" onclick="submitLog('manual')">Add Manual Minutes</button>
+                </div>
+                
+                <div style="text-align: center; font-weight: bold; color: #999;">- OR -</div>
+                
+                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Live Timer</button>
             </div>
-            <button class="btn btn-green" onclick="submitLog()">Confirm & Earn</button>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+            
+            <button class="btn btn-ghost" onclick="showScreen('home')">Cancel</button>
         </div>
     </div>
 
-    <div id="history" class="hidden">
-        <div class="card">
-            <h2>History</h2>
-            <input type="text" id="history-search" class="search-box" placeholder="Search..." oninput="renderHistory()">
-            <div id="history-list"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
-    <div id="manage-tasks" class="hidden">
-        <div class="card">
-            <h2>Library</h2>
-            <button class="btn btn-blue" onclick="toggleElement('lib-add-form')">+ New Task</button>
-            <div id="lib-add-form" class="hidden" style="margin-top:15px; padding-top:10px;">
-                <input type="text" id="lib-new-name" placeholder="Name">
-                <input list="category-list" id="lib-new-cat" placeholder="Category">
-                <input type="number" id="lib-new-pri" value="3" min="1" max="5">
-                <button class="btn btn-blue" onclick="addDirectToLibrary()">Save</button>
-            </div>
-            <hr>
-            <input type="text" id="lib-search" class="search-box" placeholder="Search..." oninput="renderLibrary()">
-            <div id="task-list-container"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
-    <div id="stats" class="hidden">
-        <div class="card">
-            <h2>Analytics</h2>
-            <div class="report-tabs">
-                <button class="tab active" onclick="setReportTab('today')">Today</button>
-                <button class="tab" onclick="setReportTab('week')">Week</button>
-                <button class="tab" onclick="setReportTab('month')">Month</button>
-                <button class="tab" onclick="setReportTab('year')">Year</button>
-            </div>
-            <div id="report-content"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
+    <div id="planner" class="hidden"><div class="card"><h2>Planner</h2><button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ Add Task</button><div id="add-todo-form" class="hidden"><input type="text" id="todo-name" placeholder="Name"><input list="category-list" id="todo-cat" placeholder="Category"><input type="date" id="todo-date"><input type="number" id="todo-pri" value="3" min="1" max="5"><button class="btn btn-green" onclick="addTodo()">Save</button></div><hr><div id="todo-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="history" class="hidden"><div class="card"><h2>History</h2><input type="text" id="history-search" class="search-box" placeholder="Search..." oninput="renderHistory()"><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><button class="btn btn-blue" onclick="toggleElement('lib-add-form')">+ New Task</button><div id="lib-add-form" class="hidden"><input type="text" id="lib-new-name" placeholder="Name"><input list="category-list" id="lib-new-cat" placeholder="Category"><input type="number" id="lib-new-pri" value="3" min="1" max="5"><button class="btn btn-blue" onclick="addDirectToLibrary()">Save</button></div><hr><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="stats" class="hidden"><div class="card"><h2>Analytics</h2><div class="report-tabs"><button class="tab active" onclick="setReportTab('today')">Today</button><button class="tab" onclick="setReportTab('week')">Week</button><button class="tab" onclick="setReportTab('month')">Month</button></div><div id="report-content"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
 
     <datalist id="category-list"></datalist>
 
@@ -146,13 +111,13 @@
             todos: rawData.todos || [],
             lastAllowance: rawData.lastAllowance || ""
         };
-        let currentReportTab = 'today';
-        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c', '#d35400', '#34495e'];
 
-        let timerInt, seconds = 0;
+        let blueTimerInt, workTimerInt, seconds = 0;
+        let activeWorkSession = null;
+        let currentReportTab = 'today';
+        const chartColors = ['#27ae60', '#2980b9', '#f1c40f', '#e67e22', '#9b59b6', '#1abc9c'];
 
         function save() { 
-            if(data.balance < 0) data.balance = 0;
             localStorage.setItem('prodAppData', JSON.stringify(data)); 
             updateUI(); 
         }
@@ -166,8 +131,6 @@
             }
         }
 
-        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
-
         function showScreen(id) {
             ['home', 'planner', 'log-activity', 'manage-tasks', 'stats', 'history'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
@@ -179,154 +142,150 @@
             updateCategoryList();
         }
 
-        function updateCategoryList() {
-            const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]);
-            document.getElementById('category-list').innerHTML = Array.from(cats).filter(c => c && c !== 'Blue' && c !== 'Bonus').map(c => `<option value="${c}">`).join('');
+        // --- TIMER LOGIC ---
+
+        function startFreeTime() {
+            if(data.balance <= 0) return alert("Bank empty!");
+            document.getElementById('active-blue-timer').classList.remove('hidden');
+            document.getElementById('main-start-btn').disabled = true;
+            seconds = 0;
+            blueTimerInt = setInterval(() => {
+                seconds++;
+                document.getElementById('blue-timer-display').innerText = formatTime(seconds);
+            }, 1000);
         }
 
-        function setReportTab(t) {
-            currentReportTab = t;
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
-            generateReport();
+        function stopFreeTime() {
+            clearInterval(blueTimerInt);
+            let used = Math.ceil(seconds / 60);
+            data.balance -= used;
+            data.logs.push({name:'Free Time', cat:'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()});
+            document.getElementById('active-blue-timer').classList.add('hidden');
+            document.getElementById('main-start-btn').disabled = false;
+            save();
         }
 
-        function generateReport() {
-            const container = document.getElementById('report-content');
-            const now = new Date();
-            let green = 0, blue = 0, workTime = 0;
-            const cats = {};
-
-            const filteredLogs = data.logs.filter(l => {
-                const lDate = new Date(l.date);
-                if(currentReportTab === 'today') return lDate.toDateString() === now.toDateString();
-                if(currentReportTab === 'week') return (now - lDate) < 7 * 86400000;
-                if(currentReportTab === 'month') return lDate.getMonth() === now.getMonth() && lDate.getFullYear() === now.getFullYear();
-                if(currentReportTab === 'year') return lDate.getFullYear() === now.getFullYear();
-            });
-
-            filteredLogs.forEach(l => {
-                if(l.reward > 0) {
-                    green += l.reward;
-                    workTime += l.timeSpent;
-                    if(l.cat !== 'Bonus') cats[l.cat] = (cats[l.cat] || 0) + l.timeSpent;
-                } else {
-                    blue += Math.abs(l.reward);
-                }
-            });
-
-            // Pie Chart Logic
-            let chartHtml = '';
-            const totalWork = Object.values(cats).reduce((a,b) => a + b, 0);
-            if(totalWork > 0) {
-                let currentTotal = 0;
-                const slices = [];
-                const catArray = Object.keys(cats);
-                catArray.forEach((c, i) => {
-                    const percent = (cats[c] / totalWork) * 100;
-                    const start = (currentTotal / totalWork) * 360;
-                    currentTotal += cats[c];
-                    const end = (currentTotal / totalWork) * 360;
-                    slices.push(`${chartColors[i % chartColors.length]} ${start}deg ${end}deg`);
-                });
-
-                chartHtml = `
-                <div class="pie-container">
-                    <div class="pie-chart" style="background: conic-gradient(${slices.join(', ')})"></div>
-                    <div class="legend">
-                        ${catArray.map((c, i) => `
-                            <div class="legend-item">
-                                <div class="dot" style="background:${chartColors[i % chartColors.length]}"></div>
-                                ${c} (${Math.round((cats[c]/totalWork)*100)}%)
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>`;
-            }
-
-            container.innerHTML = `
-                <div style="text-align:center; margin-bottom:15px;">
-                    <small>Work Time</small><h2>${workTime}m</h2>
-                    <div style="display:flex; justify-content:space-around; border-top:1px solid #eee; padding-top:10px;">
-                        <div><small>Earned</small><br><strong style="color:var(--green)">${green}m</strong></div>
-                        <div><small>Spent</small><br><strong style="color:var(--blue)">${blue}m</strong></div>
-                    </div>
-                </div>
-                ${chartHtml || '<p style="text-align:center; padding:20px;">No data for this period.</p>'}
-            `;
+        function stopWorkTimer() {
+            clearInterval(workTimerInt);
+            let elapsedMins = Math.ceil(seconds / 60);
+            completeWorkLogging(activeWorkSession, elapsedMins);
+            document.getElementById('active-work-timer').classList.add('hidden');
+            document.getElementById('main-log-btn').disabled = false;
+            activeWorkSession = null;
         }
 
-        // Logic functions (Add/Save/Delete) preserved and condensed
-        function addDirectToLibrary() {
-            const name = document.getElementById('lib-new-name').value;
-            if(!name) return;
-            data.tasks.push({name, cat: document.getElementById('lib-new-cat').value || 'General', pri: parseInt(document.getElementById('lib-new-pri').value) || 3, lastDone: null});
-            save(); renderLibrary(); toggleElement('lib-add-form');
+        function formatTime(sec) {
+            let m = Math.floor(sec / 60);
+            let s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        function addTodo() {
-            const name = document.getElementById('todo-name').value;
-            if(!name) return;
-            data.todos.push({ id: Date.now(), name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 });
-            save(); renderPlanner(); toggleElement('add-todo-form');
-        }
+        // --- CORE LOGGING LOGIC ---
 
-        function submitLog() {
-            const val = parseInt(document.getElementById('log-val').value) || 0;
+        function submitLog(mode) {
             const selectVal = document.getElementById('task-select').value;
-            let entryName, entryCat, entryPri, reward = 0;
+            let session = { name: "", cat: "", pri: 3, isTodo: false, todoId: null, saveLib: false };
+
             if(selectVal === 'new') {
-                entryName = document.getElementById('new-name').value || "Quick Task";
-                entryCat = document.getElementById('new-cat').value || 'General';
-                entryPri = parseInt(document.getElementById('new-pri-manual').value) || 3;
-                reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
-                if(document.getElementById('save-to-lib').checked) data.tasks.push({name: entryName, cat: entryCat, pri: entryPri, lastDone: new Date().toISOString()});
+                session.name = document.getElementById('new-name').value || "Quick Task";
+                session.cat = document.getElementById('new-cat').value || 'General';
+                session.pri = parseInt(document.getElementById('new-pri-manual').value) || 3;
+                session.saveLib = document.getElementById('save-to-lib').checked;
             } else if(selectVal.startsWith('todo-')) {
                 let id = selectVal.split('-')[1];
-                let todo = data.todos.find(t => t.id == id);
-                entryName = todo.name; entryCat = todo.cat; entryPri = todo.pri;
-                todo.timeInvested += val; reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
-                if(document.getElementById('is-complete').checked) {
-                    reward += (todo.pri * 10);
-                    if(todo.recurring && todo.date) {
-                        let nextDate = new Date(todo.date); nextDate.setMonth(nextDate.getMonth() + 1);
-                        todo.date = nextDate.toISOString().split('T')[0]; todo.timeInvested = 0;
-                    } else { data.todos = data.todos.filter(t => t.id != id); }
-                }
+                let t = data.todos.find(x => x.id == id);
+                session.name = t.name; session.cat = t.cat; session.pri = t.pri; session.isTodo = true; session.todoId = id;
             } else {
                 let name = selectVal.split('lib-')[1];
-                let lib = data.tasks.find(t => t.name == name);
-                entryName = lib.name; entryCat = lib.cat; entryPri = lib.pri; lib.lastDone = new Date().toISOString();
-                reward = Math.floor(val * (0.4 + (entryPri * 0.2)));
+                let l = data.tasks.find(x => x.name == name);
+                session.name = l.name; session.cat = l.cat; session.pri = l.pri;
             }
-            data.balance += reward;
-            data.logs.push({ name: entryName, cat: entryCat, reward, timeSpent: val, date: new Date().toISOString(), logId: Date.now() });
-            save(); showScreen('home');
+
+            if(mode === 'manual') {
+                let mins = parseInt(document.getElementById('log-val').value) || 0;
+                completeWorkLogging(session, mins, document.getElementById('is-complete').checked);
+                showScreen('home');
+            } else {
+                // Timer Mode
+                activeWorkSession = session;
+                seconds = 0;
+                document.getElementById('work-timer-name').innerText = session.name;
+                document.getElementById('active-work-timer').classList.remove('hidden');
+                document.getElementById('main-log-btn').disabled = true;
+                workTimerInt = setInterval(() => {
+                    seconds++;
+                    document.getElementById('work-timer-display').innerText = formatTime(seconds);
+                }, 1000);
+                showScreen('home');
+            }
         }
 
-        // Render functions preserved
-        function renderHistory() {
-            const q = document.getElementById('history-search').value.toLowerCase();
-            document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,20).map(l => `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><br><small>${l.reward}m earned</small></span><button onclick="deleteLog(${l.logId})">Undo</button></div>`).join('');
+        function completeWorkLogging(session, mins, isFinished = false) {
+            let reward = Math.floor(mins * (0.4 + (session.pri * 0.2)));
+            
+            if(session.isTodo) {
+                let todo = data.todos.find(t => t.id == session.todoId);
+                todo.timeInvested += mins;
+                if(isFinished) {
+                    reward += (session.pri * 10);
+                    if(todo.recurring) {
+                        let d = new Date(todo.date); d.setMonth(d.getMonth()+1);
+                        todo.date = d.toISOString().split('T')[0]; todo.timeInvested = 0;
+                    } else { data.todos = data.todos.filter(t => t.id != session.todoId); }
+                }
+            }
+            if(session.saveLib && !data.tasks.find(t => t.name === session.name)) {
+                data.tasks.push({name: session.name, cat: session.cat, pri: session.pri, lastDone: new Date().toISOString()});
+            } else {
+                let libTask = data.tasks.find(t => t.name === session.name);
+                if(libTask) libTask.lastDone = new Date().toISOString();
+            }
+
+            data.balance += reward;
+            data.logs.push({ name: session.name, cat: session.cat, reward, timeSpent: mins, date: new Date().toISOString(), logId: Date.now() });
+            save();
+            if(mins > 0) alert(`Great work! Earned ${reward}m Blue Time.`);
         }
-        function deleteLog(id) { const i = data.logs.findIndex(l => l.logId === id); if(i>-1) { data.balance -= data.logs[i].reward; data.logs.splice(i,1); save(); renderHistory(); }}
-        function renderLibrary() {
-            const q = document.getElementById('lib-search').value.toLowerCase();
-            document.getElementById('task-list-container').innerHTML = data.tasks.filter(t => t.name.toLowerCase().includes(q)).map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat}</small></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join('');
-        }
-        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><br><small>${t.date || 'No Date'}</small></span><button onclick="data.todos = data.todos.filter(x=>x.id != ${t.id});save();renderPlanner();">Del</button></div>`).join(''); }
-        function startFreeTime() { if(data.balance <= 0) return alert("Empty!"); document.getElementById('active-timer').classList.remove('hidden'); timerInt = setInterval(() => { seconds++; document.getElementById('timer-display').innerText = Math.floor(seconds/60) + ":" + (seconds%60).toString().padStart(2,'0'); }, 1000); }
-        function stopFreeTime() { clearInterval(timerInt); let used = Math.ceil(seconds/60); data.balance -= used; data.logs.push({name:'Free Time', cat: 'Blue', reward:-used, date:new Date().toISOString(), logId:Date.now()}); document.getElementById('active-timer').classList.add('hidden'); seconds=0; save(); }
+
+        // --- UI RENDERERS (HISTORY, LIBRARY, PLANNER, STATS) ---
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
+        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function updateRateDisplay(p, id) { document.getElementById(id).innerText = `Earn Rate: ${(0.4 + (p * 0.2)).toFixed(1)}x`; }
+        function updateCategoryList() { const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]); document.getElementById('category-list').innerHTML = Array.from(cats).filter(c => c && c !== 'Blue' && c !== 'Bonus').map(c => `<option value="${c}">`).join(''); }
         function populateDropdown() {
             let sel = document.getElementById('task-select');
-            let opts = '<option value="new">+ One-Off</option>';
-            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
+            let opts = '<option value="new">+ One-Off / New</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[PLANNER] ${t.name}</option>`);
             data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
             sel.innerHTML = opts; checkNewTask('new');
         }
         function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-')); }
-        function updateRateDisplay(p, id) { document.getElementById(id).innerText = `Earn Rate: ${(0.4 + (p * 0.2)).toFixed(1)}x`; }
+        function renderHistory() { const q = document.getElementById('history-search').value.toLowerCase(); document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,15).map(l => `<div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><br><small>${l.reward}m</small></span><button onclick="deleteLog(${l.logId})">Undo</button></div>`).join(''); }
+        function deleteLog(id) { const i = data.logs.findIndex(l => l.logId === id); if(i>-1) { data.balance -= data.logs[i].reward; data.logs.splice(i,1); save(); renderHistory(); }}
+        function renderLibrary() { const q = document.getElementById('lib-search').value.toLowerCase(); document.getElementById('task-list-container').innerHTML = data.tasks.filter(t => t.name.toLowerCase().includes(q)).map((t,i) => `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat}</small></span><button onclick="data.tasks.splice(${i},1);save();renderLibrary();">Del</button></div>`).join(''); }
+        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item todo-item"><span><strong>${t.name}</strong><br><small>Invested: ${t.timeInvested}m</small></span><button onclick="data.todos = data.todos.filter(x=>x.id != ${t.id});save();renderPlanner();">Del</button></div>`).join('') || "Planner empty."; }
+        function addDirectToLibrary() { const name = document.getElementById('lib-new-name').value; if(!name) return; data.tasks.push({name, cat: document.getElementById('lib-new-cat').value || 'General', pri: parseInt(document.getElementById('lib-new-pri').value) || 3, lastDone: null}); save(); renderLibrary(); toggleElement('lib-add-form'); }
+        function addTodo() { const name = document.getElementById('todo-name').value; if(!name) return; data.todos.push({ id: Date.now(), name, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: parseInt(document.getElementById('todo-pri').value) || 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 }); save(); renderPlanner(); toggleElement('add-todo-form'); }
+        
+        function setReportTab(t) { currentReportTab = t; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); event.target.classList.add('active'); generateReport(); }
+        function generateReport() {
+            const container = document.getElementById('report-content');
+            const now = new Date(); let green = 0, workTime = 0, cats = {};
+            const filtered = data.logs.filter(l => {
+                const ld = new Date(l.date);
+                if(currentReportTab === 'today') return ld.toDateString() === now.toDateString();
+                if(currentReportTab === 'week') return (now - ld) < 7 * 86400000;
+                if(currentReportTab === 'month') return ld.getMonth() === now.getMonth();
+            });
+            filtered.forEach(l => { if(l.reward > 0) { green += l.reward; workTime += l.timeSpent; if(l.cat !== 'Bonus') cats[l.cat] = (cats[l.cat] || 0) + l.timeSpent; } });
+            let chartSlices = [], total = Object.values(cats).reduce((a,b)=>a+b,0), curr = 0;
+            Object.keys(cats).forEach((c, i) => { 
+                let start = (curr/total)*360; curr += cats[c]; let end = (curr/total)*360;
+                chartSlices.push(`${chartColors[i % 6]} ${start}deg ${end}deg`);
+            });
+            container.innerHTML = `<div style="text-align:center;margin:10px;"><h2>${workTime}m Work</h2><small>${green}m Blue Earned</small></div>` + 
+                (total > 0 ? `<div class="pie-container"><div class="pie-chart" style="background: conic-gradient(${chartSlices.join(',')})"></div><div class="legend">${Object.keys(cats).map((c,i)=>`<div class="legend-item"><div class="dot" style="background:${chartColors[i%6]}"></div>${c}</div>`).join('')}</div></div>` : '<p>No data</p>');
+        }
 
         checkDailyAllowance();
         updateUI();
