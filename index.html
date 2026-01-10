@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green vs Blue Pro</title>
     <style>
-        :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; }
-        body { font-family: 'sans-serif'; background: var(--light); margin: 0; padding: 15px; color: var(--dark); }
+        :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; }
+        body { font-family: sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .balance { font-size: 2.5rem; font-weight: bold; color: var(--blue); text-align: center; }
         .btn { border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin: 5px 0; }
@@ -14,11 +14,12 @@
         .btn-blue { background: var(--blue); color: white; }
         .btn-ghost { background: #ddd; color: var(--dark); }
         .hidden { display: none; }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .priority-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--gold); color: black; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-top: 5px; font-size: 1rem; }
+        .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; }
+        .history-green { border-left-color: var(--green); }
+        .history-blue { border-left-color: var(--blue); }
+        small { color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -34,37 +35,55 @@
             <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Deduct Time</button>
         </div>
 
-        <button class="btn btn-green" onclick="showScreen('log-activity')">Log Productive Activity</button>
+        <button class="btn btn-green" onclick="showScreen('log-activity')">+ Log Activity</button>
         <button class="btn btn-blue" id="start-btn" onclick="startFreeTime()">Start Free Time</button>
-        <button class="btn btn-ghost" onclick="showScreen('manage-tasks')">Edit Task Library</button>
+        <button class="btn btn-ghost" onclick="showScreen('history')">Activity History</button>
+        <button class="btn btn-ghost" onclick="showScreen('manage-tasks')">My Task Library</button>
         <button class="btn btn-ghost" onclick="showScreen('stats')">Weekly Report</button>
     </div>
 
     <div id="log-activity" class="hidden">
         <div class="card">
             <h2>What did you do?</h2>
-            <div class="form-group">
-                <label>Select Saved Task</label>
-                <select id="task-select" onchange="checkNewTask(this.value)"></select>
-            </div>
+            <label>Select Saved Task</label>
+            <select id="task-select" onchange="checkNewTask(this.value)"></select>
+
             <div id="new-task-fields" class="hidden">
-                <div class="form-group"><label>Task Name</label><input type="text" id="new-name"></div>
-                <div class="form-group"><label>Category</label><input type="text" id="new-cat" placeholder="Work, Health, Home..."></div>
-                <div class="form-group">
-                    <label>Type</label>
-                    <select id="new-type">
-                        <option value="timed">Timed (Minutes)</option>
-                        <option value="completion">Completion (One-off)</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>Priority (1-5)</label><input type="number" id="new-pri" min="1" max="5" value="3"></div>
-                <div class="form-group"><label><input type="checkbox" id="save-task" checked> Save to Library</label></div>
+                <label>Task Name</label><input type="text" id="new-name" placeholder="e.g. Taxes">
+                <label>Category</label><input type="text" id="new-cat" placeholder="Work, Home, Fitness">
+                <label>Type</label>
+                <select id="new-type">
+                    <option value="timed">Timed (Earn per minute)</option>
+                    <option value="completion">Completion (One-off reward)</option>
+                </select>
+                <label>Priority (1-5)</label><input type="number" id="new-pri" min="1" max="5" value="3">
+                <label>Base Minutes (Target Reward)</label><input type="number" id="new-base" value="20">
+                <label><input type="checkbox" id="save-task" checked> Save to Library</label>
             </div>
-            <div class="form-group">
-                <label id="val-label">Minutes / Amount Done</label>
-                <input type="number" id="log-val" placeholder="0">
+
+            <div id="log-input-area" style="margin-top:15px;">
+                <label id="val-label">Minutes Spent / Units Done</label>
+                <input type="number" id="log-val" value="30">
             </div>
-            <button class="btn btn-green" onclick="submitLog()">Confirm & Earn Blue Time</button>
+
+            <button class="btn btn-green" onclick="submitLog()">Confirm & Earn</button>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="history" class="hidden">
+        <div class="card">
+            <h2>Recent History</h2>
+            <p><small>Deleting an entry corrects your balance.</small></p>
+            <div id="history-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="manage-tasks" class="hidden">
+        <div class="card">
+            <h2>Task Library</h2>
+            <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
@@ -80,26 +99,42 @@
     <script>
         let data = JSON.parse(localStorage.getItem('prodAppData')) || {
             balance: 0,
-            tasks: [{name: 'Reading', cat: 'Personal', type: 'timed', pri: 3}],
-            logs: []
+            tasks: [],
+            logs: [],
+            lastAllowance: ""
         };
 
         let timerInt;
         let seconds = 0;
 
-        function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
+        function save() { 
+            localStorage.setItem('prodAppData', JSON.stringify(data)); 
+            updateUI(); 
+        }
 
         function showScreen(id) {
-            ['home', 'log-activity', 'stats'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['home', 'log-activity', 'manage-tasks', 'stats', 'history'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             if(id === 'log-activity') populateDropdown();
+            if(id === 'manage-tasks') renderLibrary();
+            if(id === 'history') renderHistory();
             if(id === 'stats') generateReport();
+        }
+
+        function checkDailyAllowance() {
+            const today = new Date().toLocaleDateString();
+            if(data.lastAllowance !== today) {
+                data.balance += 20; 
+                data.lastAllowance = today;
+                data.logs.push({name: 'Daily Allowance', cat: 'Bonus', reward: 20, date: new Date().toISOString(), type: 'green'});
+                save();
+            }
         }
 
         function populateDropdown() {
             let sel = document.getElementById('task-select');
             sel.innerHTML = '<option value="new">+ Add New Task</option>' + 
-                data.tasks.map(t => `<option value="${t.name}">${t.name} (${t.cat})</option>`).join('');
+                data.tasks.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
             checkNewTask('new');
         }
 
@@ -110,30 +145,89 @@
         function submitLog() {
             let task;
             const isNew = document.getElementById('task-select').value === 'new';
-            
+            const val = parseFloat(document.getElementById('log-val').value);
+
             if(isNew) {
                 task = {
-                    name: document.getElementById('new-name').value,
+                    name: document.getElementById('new-name').value || "Unnamed Task",
                     cat: document.getElementById('new-cat').value || 'General',
                     type: document.getElementById('new-type').value,
-                    pri: parseInt(document.getElementById('new-pri').value)
+                    pri: parseInt(document.getElementById('new-pri').value),
+                    base: parseInt(document.getElementById('new-base').value)
                 };
                 if(document.getElementById('save-task').checked) data.tasks.push(task);
             } else {
                 task = data.tasks.find(t => t.name === document.getElementById('task-select').value);
             }
 
-            const val = parseInt(document.getElementById('log-val').value);
-            const reward = (task.type === 'timed') ? Math.floor(val * (task.pri * 0.2)) : (val * task.pri);
-            
+            let reward = 0;
+            if(task.type === 'timed') {
+                reward = Math.floor(val * (0.4 + (task.pri * 0.2)));
+            } else {
+                reward = Math.floor(task.base * (0.5 + (task.pri * 0.25)) * val);
+            }
+
             data.balance += reward;
-            data.logs.push({ ...task, val, reward, date: new Date().toISOString() });
+            data.logs.push({ ...task, val, reward, date: new Date().toISOString(), logId: Date.now() });
             save();
             showScreen('home');
         }
 
+        function renderLibrary() {
+            const container = document.getElementById('task-list-container');
+            container.innerHTML = data.tasks.map((t, i) => `
+                <div class="list-item">
+                    <span><strong>${t.name}</strong><br><small>${t.cat} | Pri: ${t.pri} | ${t.type}</small></span>
+                    <button onclick="deleteTask(${i})" style="color:var(--red); background:none; border:none; font-weight:bold;">DELETE</button>
+                </div>
+            `).join('') || "Library is empty.";
+        }
+
+        function deleteTask(i) {
+            data.tasks.splice(i, 1);
+            save();
+            renderLibrary();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            const recentLogs = [...data.logs].reverse().slice(0, 20);
+            container.innerHTML = recentLogs.map((l, i) => `
+                <div class="list-item ${l.reward > 0 ? 'history-green' : 'history-blue'}">
+                    <span>
+                        <strong>${l.name}</strong> <small>(${new Date(l.date).toLocaleDateString()})</small><br>
+                        <small>${l.reward > 0 ? 'Earned' : 'Spent'}: ${Math.abs(l.reward)}m</small>
+                    </span>
+                    <button onclick="deleteLog(${l.logId})" style="color:var(--red); background:none; border:none; font-size:0.8rem;">REMOVE</button>
+                </div>
+            `).join('') || "No history yet.";
+        }
+
+        function deleteLog(logId) {
+            const index = data.logs.findIndex(l => l.logId === logId);
+            if(index > -1) {
+                data.balance -= data.logs[index].reward;
+                data.logs.splice(index, 1);
+                save();
+                renderHistory();
+            }
+        }
+
+        function generateReport() {
+            const container = document.getElementById('report-content');
+            let green = 0, blue = 0;
+            const cats = {};
+            data.logs.filter(l => new Date(l.date) > new Date(Date.now() - 7*86400000)).forEach(l => {
+                if(l.reward > 0) { green += l.reward; cats[l.cat] = (cats[l.cat] || 0) + l.reward; }
+                else { blue += Math.abs(l.reward); }
+            });
+            let html = `<p><b>Weekly Green:</b> ${green}m</p><p><b>Weekly Blue:</b> ${blue}m</p><hr>`;
+            for(let c in cats) html += `<div class="stat-row"><span>${c}</span><span>${cats[c]}m</span></div>`;
+            container.innerHTML = html;
+        }
+
         function startFreeTime() {
-            if(data.balance <= 0) return alert("No Blue time available!");
+            if(data.balance <= 0) return alert("Bank empty!");
             document.getElementById('active-timer').classList.remove('hidden');
             document.getElementById('start-btn').disabled = true;
             timerInt = setInterval(() => {
@@ -147,35 +241,16 @@
             clearInterval(timerInt);
             let used = Math.ceil(seconds / 60);
             data.balance -= used;
-            data.logs.push({ name: 'Free Time', cat: 'Blue', reward: -used, date: new Date().toISOString() });
+            data.logs.push({ name: 'Free Time', cat: 'Blue', reward: -used, date: new Date().toISOString(), logId: Date.now() });
             document.getElementById('active-timer').classList.add('hidden');
             document.getElementById('start-btn').disabled = false;
             seconds = 0;
             save();
         }
 
-        function generateReport() {
-            const container = document.getElementById('report-content');
-            const cats = {};
-            let greenTotal = 0, blueTotal = 0;
-
-            data.logs.forEach(l => {
-                if(new Date(l.date) > new Date(Date.now() - 7*24*60*60*1000)) {
-                    if(l.reward > 0) {
-                        cats[l.cat] = (cats[l.cat] || 0) + l.reward;
-                        greenTotal += l.reward;
-                    } else {
-                        blueTotal += Math.abs(l.reward);
-                    }
-                }
-            });
-
-            let html = `<h4>Last 7 Days</h4><p>Green Earned: ${greenTotal}m</p><p>Blue Used: ${blueTotal}m</p><hr>`;
-            for(let c in cats) html += `<div class="stat-row"><span>${c}</span><span>${cats[c]}m</span></div>`;
-            container.innerHTML = html;
-        }
-
         function updateUI() { document.getElementById('bal').innerText = data.balance + 'm'; }
+
+        checkDailyAllowance();
         updateUI();
     </script>
 </body>
