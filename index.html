@@ -134,4 +134,171 @@
         let rawData = JSON.parse(localStorage.getItem('prodAppData')) || {};
         let data = {
             balance: rawData.balance || 0, tasks: rawData.tasks || [], logs: rawData.logs || [],
-            todos: rawData.todos ||
+            todos: rawData.todos || [], lastAllowanceDate: rawData.lastAllowanceDate || "",
+            lastWorkCheck: rawData.lastWorkCheck || "", activeTimer: rawData.activeTimer || null
+        };
+        let currentTab = 'today', reportOffset = 0, reportViewMode = 'macro';
+
+        function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
+
+        window.onload = () => {
+            const todayStr = new Date().toDateString();
+            if (data.lastAllowanceDate !== todayStr) { data.balance += 20; data.lastAllowanceDate = todayStr; save(); }
+            if (data.lastWorkCheck !== todayStr) document.getElementById('work-prompt-modal').classList.remove('hidden');
+            document.getElementById('log-date').valueAsDate = new Date();
+            setInterval(runTick, 1000); updateUI();
+        };
+
+        function runTick() {
+            if (!data.activeTimer) return;
+            const elapsed = Math.floor((Date.now() - data.activeTimer.startTime) / 1000);
+            const clock = Math.floor(elapsed/60).toString().padStart(2,'0') + ":" + (elapsed%60).toString().padStart(2,'0');
+            if (data.activeTimer.type === 'work') {
+                document.getElementById('active-work-timer').classList.remove('hidden');
+                document.getElementById('work-timer-clock').innerText = clock;
+                document.getElementById('work-timer-name-display').innerText = data.activeTimer.session.name;
+            } else {
+                document.getElementById('active-blue-timer').classList.remove('hidden');
+                document.getElementById('blue-timer-display').innerText = clock;
+            }
+        }
+
+        function changeReportDate(dir) { reportOffset += dir; generateReport(); }
+        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
+        function updateRatio(id, val) { document.getElementById(id).innerText = (0.4 + (val * 0.2)).toFixed(1) + 'x'; }
+
+        function showScreen(id) {
+            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'manage-tasks') renderLibrary();
+            if(id === 'history') renderHistory();
+            if(id === 'stats') generateReport();
+            if(id === 'planner') renderPlanner();
+            if(id === 'log-activity') populateDropdown();
+            updateCategoryList();
+        }
+
+        function generateReport() {
+            const targetDate = new Date(); 
+            if(currentTab === 'today') targetDate.setDate(targetDate.getDate() + reportOffset);
+            if(currentTab === 'week') targetDate.setDate(targetDate.getDate() + (reportOffset * 7));
+            if(currentTab === 'month') targetDate.setMonth(targetDate.getMonth() + reportOffset);
+
+            const labelEl = document.getElementById('current-report-label');
+            if(reportOffset === 0) labelEl.innerText = currentTab === 'today' ? "Today" : (currentTab === 'week' ? "This Week" : "This Month");
+            else labelEl.innerText = targetDate.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+
+            let yellow = 0, green = 0, spent = 0, cats = {};
+            let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
+
+            const filtered = data.logs.filter(l => {
+                const ld = new Date(l.date);
+                if(currentTab === 'today') return ld.toDateString() === targetDate.toDateString();
+                if(currentTab === 'week') { const diff = (targetDate - ld) / 86400000; return diff >= 0 && diff < 7; }
+                return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
+            });
+
+            filtered.forEach(l => {
+                if(l.isYellow || l.cat.toLowerCase() === 'job') yellow += l.timeSpent;
+                else if(l.reward >= 0) { green += l.timeSpent; cats[l.cat] = (cats[l.cat]||0) + l.timeSpent; }
+                else spent += Math.abs(l.reward);
+            });
+
+            let grey = Math.max(0, periodMins - (yellow + green + spent));
+            const total = yellow + green + spent + grey;
+            let slices = [], legendItems = '';
+
+            if (reportViewMode === 'macro') {
+                slices = [`var(--yellow) 0deg ${(yellow/total)*360}deg`, `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`, `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`, `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg` ];
+                legendItems = `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div><div class="legend-item"><span class="dot" style="background:var(--green)"></span>Growth: ${green}m</div><div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div><div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
+            } else {
+                let curDeg = 0;
+                if(yellow > 0) { slices.push(`var(--yellow) ${curDeg}deg ${curDeg + (yellow/total)*360}deg`); curDeg += (yellow/total)*360; }
+                legendItems += `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>`;
+                Object.keys(cats).forEach((c, i) => {
+                    let deg = (cats[c]/total)*360; let clr = `hsl(${i*85}, 70%, 45%)`;
+                    slices.push(`${clr} ${curDeg}deg ${curDeg + deg}deg`); curDeg += deg;
+                    legendItems += `<div class="legend-item"><span class="dot" style="background:${clr}"></span>${c}: ${cats[c]}m</div>`;
+                });
+                slices.push(`var(--blue) ${curDeg}deg ${curDeg + (spent/total)*360}deg`); curDeg += (spent/total)*360;
+                slices.push(`var(--grey) ${curDeg}deg 360deg`);
+                legendItems += `<div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div><div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
+            }
+            document.getElementById('report-content').innerHTML = `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div><div class="legend">${legendItems}</div>`;
+        }
+
+        // ... PRESERVED LOGIC FOR PLANNER, LOGGING, LIBRARY ...
+        function populateDropdown() {
+            let opts = '<option value="new">+ One-Off Log</option><option value="yellow-manual">+ Manual Job Shift</option><option value="blue-manual">+ Manual Blue Spend</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[G] ${t.name}</option>`);
+            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
+            document.getElementById('task-select').innerHTML = opts; handleTaskDropdownChange('new');
+        }
+        function handleTaskDropdownChange(v) { 
+            document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); 
+            document.getElementById('manual-job-fields').classList.toggle('hidden', v !== 'yellow-manual');
+            document.getElementById('log-duration-card').classList.toggle('hidden', v === 'yellow-manual');
+            document.getElementById('timer-options-card').classList.toggle('hidden', v === 'yellow-manual' || v === 'blue-manual');
+            document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-'));
+        }
+        function submitLog(mode) {
+            const v = document.getElementById('task-select').value;
+            const logDate = document.getElementById('log-date').value || new Date().toISOString();
+            if(v === 'yellow-manual') {
+                const h = parseFloat(document.getElementById('manual-job-hours').value) || 0;
+                data.balance += 20; data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h*60), date: logDate, logId: Date.now(), isYellow: true });
+                save(); showScreen('home'); return;
+            }
+            if(v === 'blue-manual') {
+                const mins = parseInt(document.getElementById('log-val').value) || 0;
+                data.balance -= mins; data.logs.push({ name: "Manual Blue", cat: "Blue", reward: -mins, timeSpent: mins, date: logDate, logId: Date.now() });
+                save(); showScreen('home'); return;
+            }
+            let s = { name: "Task", cat: "General", pri: 3 };
+            if(v === 'new') {
+                s.name = document.getElementById('new-name').value || "Task"; s.cat = document.getElementById('new-cat').value || "General"; s.pri = parseInt(document.getElementById('new-pri-manual').value) || 3;
+                if(document.getElementById('save-to-lib').checked) data.tasks.push({name: s.name, cat: s.cat, pri: s.pri});
+            } else if(v.startsWith('todo-')) { let t = data.todos.find(x => x.id == v.split('-')[1]); s = { ...t, isTodo: true, todoId: t.id }; }
+            else { let l = data.tasks.find(x => x.name == v.split('lib-')[1]); s = { ...l }; }
+            if(mode === 'manual') { completeLogging(s, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked, logDate); showScreen('home'); }
+            else { data.activeTimer = { type: 'work', startTime: Date.now(), session: s }; save(); showScreen('home'); }
+        }
+        function completeLogging(s, mins, finished, customDate) {
+            let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
+            if(s.isTodo) {
+                let t = data.todos.find(x => x.id == s.todoId); if(t) t.timeInvested += mins;
+                if(finished && t) { 
+                    reward += (s.pri * 10); 
+                    if(t.recurring) {
+                        let oldD = t.dueDate ? new Date(t.dueDate) : new Date();
+                        let nextM = new Date(oldD.getFullYear(), oldD.getMonth() + 1, oldD.getDate());
+                        t.dueDate = nextM.toISOString().split('T')[0]; t.timeInvested = 0;
+                    } else { data.todos = data.todos.filter(x => x.id != s.todoId); }
+                }
+            }
+            data.balance += reward; data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate, logId: Date.now() });
+            save();
+        }
+
+        // HELPERS
+        function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
+        function emailReport() { window.location.href = `mailto:?subject=Ledger Backup&body=${encodeURIComponent(JSON.stringify(data))}`; }
+        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong><br><small>${t.cat} | Due: ${t.dueDate || '---'}</small></span><button class="btn-ghost" onclick="openTodoModal(${t.id})">Edit</button></div>`).join('') || "Empty."; }
+        function openTodoModal(id = null) { document.getElementById('todo-modal').classList.remove('hidden'); if(!id) { document.getElementById('edit-todo-id').value = ""; document.getElementById('todo-name').value = ""; } else { const t = data.todos.find(x => x.id == id); document.getElementById('edit-todo-id').value = t.id; document.getElementById('todo-name').value = t.name; document.getElementById('todo-cat').value = t.cat; document.getElementById('todo-date').value = t.dueDate || ""; document.getElementById('todo-recurring').checked = t.recurring; } }
+        function saveTodo() { const id = document.getElementById('edit-todo-id').value; const t = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', dueDate: document.getElementById('todo-date').value, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 }; if(id) { let idx = data.todos.findIndex(x => x.id == id); t.timeInvested = data.todos[idx].timeInvested; data.todos[idx] = t; } else data.todos.push(t); save(); renderPlanner(); closeTodoModal(); }
+        function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
+        function logWorkShift(prompt) { const h = prompt ? document.getElementById('prompt-work-hours').value : 0; if(!h) return; data.balance += 20; data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h*60), date: new Date().toISOString(), logId: Date.now(), isYellow: true }); closeWorkPrompt(); }
+        function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
+        function startFreeTime() { if(data.balance > 0) { data.activeTimer = { type: 'blue', startTime: Date.now() }; save(); } }
+        function stopFreeTime() { const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000); data.balance -= mins; data.logs.push({name: 'Free Time', reward: -mins, timeSpent: mins, date: new Date().toISOString(), logId: Date.now()}); data.activeTimer = null; save(); }
+        function stopWorkTimer() { const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000); completeLogging(data.activeTimer.session, mins, false, new Date().toISOString()); data.activeTimer = null; save(); }
+        function toggleReportView() { reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro'; document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic' : 'Detailed'}`; generateReport(); }
+        function updateCategoryList() { const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat)]); document.getElementById('category-list').innerHTML = Array.from(cats).map(c=>`<option value="${c}">`).join(''); }
+        function renderLibrary() { const q = document.getElementById('lib-search').value.toLowerCase(); document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => t.name.toLowerCase().includes(q) ? `<div class="list-item"><span><strong>${t.name}</strong> (P${t.pri})</span><button class="btn-ghost" onclick="openLibModal(${i})">Edit</button></div>` : '').join(''); }
+        function openLibModal(i = -1) { document.getElementById('lib-modal').classList.remove('hidden'); if(i===-1) document.getElementById('lib-edit-index').value = "-1"; else { const t = data.tasks[i]; document.getElementById('lib-edit-index').value = i; document.getElementById('lib-name').value = t.name; document.getElementById('lib-pri').value = t.pri; updateRatio('lib-ratio-display', t.pri); } }
+        function saveLibraryItem() { const i = parseInt(document.getElementById('lib-edit-index').value); const t = { name: document.getElementById('lib-name').value, cat: document.getElementById('lib-cat').value || 'Gen', pri: parseInt(document.getElementById('lib-pri').value) || 3 }; if(i===-1) data.tasks.push(t); else data.tasks[i] = t; save(); renderLibrary(); closeLibModal(); }
+        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
+        function renderHistory() { const q = document.getElementById('history-search').value.toLowerCase(); document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,20).map(l => `<div class="list-item"><span>${l.name}<br><small>${l.reward}m</small></span></div>`).join(''); }
+    </script>
+</body>
+</html>
