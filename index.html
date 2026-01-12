@@ -326,54 +326,96 @@
         function toggleReportView() { reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro'; document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic' : 'Detailed'}`; generateReport(); }
         
         function generateReport() {
-            const targetDate = new Date(); 
-            if(currentTab === 'today') targetDate.setDate(targetDate.getDate() + reportOffset);
-            if(currentTab === 'week') targetDate.setDate(targetDate.getDate() + (reportOffset * 7));
-            if(currentTab === 'month') targetDate.setMonth(targetDate.getMonth() + reportOffset);
+    const targetDate = new Date(); 
+    if(currentTab === 'today') targetDate.setDate(targetDate.getDate() + reportOffset);
+    if(currentTab === 'week') targetDate.setDate(targetDate.getDate() + (reportOffset * 7));
+    if(currentTab === 'month') targetDate.setMonth(targetDate.getMonth() + reportOffset);
 
-            const labelEl = document.getElementById('current-report-label');
-            if(reportOffset === 0) labelEl.innerText = currentTab === 'today' ? "Today" : (currentTab === 'week' ? "This Week" : "This Month");
-            else labelEl.innerText = targetDate.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+    const labelEl = document.getElementById('current-report-label');
+    if(reportOffset === 0) {
+        labelEl.innerText = currentTab === 'today' ? "Today" : (currentTab === 'week' ? "This Week" : "This Month");
+    } else {
+        labelEl.innerText = targetDate.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+    }
 
-            let yellow = 0, green = 0, spent = 0, cats = {};
-            let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
+    let yellow = 0, green = 0, spent = 0, cats = {};
+    let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
 
-            const filtered = data.logs.filter(l => {
-                const ld = new Date(l.date);
-                if(currentTab === 'today') return ld.toDateString() === targetDate.toDateString();
-                if(currentTab === 'week') { const diff = Math.abs((targetDate - ld) / 86400000); return diff < 7; }
-                return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
-            });
-
-            filtered.forEach(l => {
-                if(l.isYellow || l.cat.toLowerCase() === 'job') yellow += l.timeSpent;
-                else if(l.reward >= 0) { green += l.timeSpent; cats[l.cat] = (cats[l.cat]||0) + l.timeSpent; }
-                else spent += Math.abs(l.reward);
-            });
-
-            let grey = Math.max(0, periodMins - (yellow + green + spent));
-            const total = yellow + green + spent + grey;
-            let slices = [], legendItems = '';
-
-            if (reportViewMode === 'macro') {
-                slices = [`var(--yellow) 0deg ${(yellow/total)*360}deg`, `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`, `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`, `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg` ];
-                legendItems = `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div><div class="legend-item"><span class="dot" style="background:var(--green)"></span>Growth: ${green}m</div><div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div><div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
-            } else {
-                let curDeg = 0;
-                if(yellow > 0) { slices.push(`var(--yellow) ${curDeg}deg ${curDeg + (yellow/total)*360}deg`); curDeg += (yellow/total)*360; }
-                legendItems += `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>`;
-                Object.keys(cats).forEach((c, i) => {
-                    let deg = (cats[c]/total)*360; let clr = `hsl(${i*85}, 70%, 45%)`;
-                    slices.push(`${clr} ${curDeg}deg ${curDeg + deg}deg`); curDeg += deg;
-                    legendItems += `<div class="legend-item"><span class="dot" style="background:${clr}"></span>${c}: ${cats[c]}m</div>`;
-                });
-                slices.push(`var(--blue) ${curDeg}deg ${curDeg + (spent/total)*360}deg`); curDeg += (spent/total)*360;
-                slices.push(`var(--grey) ${curDeg}deg 360deg`);
-                legendItems += `<div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div><div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
-            }
-            document.getElementById('report-content').innerHTML = `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div><div class="legend">${legendItems}</div>`;
+    const filtered = data.logs.filter(l => {
+        const ld = new Date(l.date);
+        if(currentTab === 'today') return ld.toDateString() === targetDate.toDateString();
+        if(currentTab === 'week') {
+            const diff = (targetDate - ld) / 86400000;
+            return diff >= 0 && diff < 7;
         }
+        return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
+    });
 
+    filtered.forEach(l => {
+        if(l.isYellow || (l.cat && l.cat.toLowerCase() === 'job')) {
+            yellow += l.timeSpent;
+        } else if(l.reward >= 0) {
+            green += l.timeSpent;
+            let categoryName = l.cat || "General";
+            cats[categoryName] = (cats[categoryName] || 0) + l.timeSpent;
+        } else {
+            spent += Math.abs(l.timeSpent);
+        }
+    });
+
+    let grey = Math.max(0, periodMins - (yellow + green + spent));
+    const total = yellow + green + spent + grey;
+    let slices = [], legendItems = '';
+
+    if (reportViewMode === 'macro') {
+        slices = [
+            `var(--yellow) 0deg ${(yellow/total)*360}deg`,
+            `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`,
+            `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`,
+            `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg`
+        ];
+        legendItems = `
+            <div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>
+            <div class="legend-item"><span class="dot" style="background:var(--green)"></span>Growth: ${green}m</div>
+            <div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>
+            <div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
+    } else {
+        let curDeg = 0;
+        // 1. Job Slice
+        if(yellow > 0) {
+            let deg = (yellow/total)*360;
+            slices.push(`var(--yellow) ${curDeg}deg ${curDeg + deg}deg`);
+            curDeg += deg;
+        }
+        legendItems += `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>`;
+        
+        // 2. Detailed Growth Slices (HSL Generated)
+        const catKeys = Object.keys(cats);
+        catKeys.forEach((c, i) => {
+            let deg = (cats[c]/total)*360;
+            let clr = `hsl(${i * (360 / Math.max(catKeys.length, 1))}, 70%, 45%)`;
+            slices.push(`${clr} ${curDeg}deg ${curDeg + deg}deg`);
+            curDeg += deg;
+            legendItems += `<div class="legend-item"><span class="dot" style="background:${clr}"></span>${c}: ${cats[c]}m</div>`;
+        });
+
+        // 3. Blue/Spent Slice
+        if(spent > 0) {
+            let deg = (spent/total)*360;
+            slices.push(`var(--blue) ${curDeg}deg ${curDeg + deg}deg`);
+            curDeg += deg;
+        }
+        legendItems += `<div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>`;
+
+        // 4. Grey/Idle Slice
+        slices.push(`var(--grey) ${curDeg}deg 360deg`);
+        legendItems += `<div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
+    }
+    
+    document.getElementById('report-content').innerHTML = `
+        <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
+        <div class="legend">${legendItems}</div>`;
+}
         // --- CORE HELPERS ---
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
         function emailReport() { window.location.href = `mailto:?subject=Time Bank Backup&body=${encodeURIComponent(JSON.stringify(data))}`; }
@@ -389,3 +431,4 @@
     </script>
 </body>
 </html>
+
