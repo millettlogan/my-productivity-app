@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green vs Blue: Unified Edition</title>
+    <title>Green vs Blue: Professional Ledger</title>
     <style>
         :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; --yellow: #f39c12; --grey: #95a5a6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); line-height: 1.4; }
@@ -28,7 +28,7 @@
         .pie-chart { width: 180px; height: 180px; border-radius: 50%; margin: 15px auto; border: 5px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
         .legend { font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 10px; background: #fcfcfc; border-radius: 8px; }
         .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; }
-        .label-text { font-size: 0.8rem; font-weight: bold; color: #777; margin-bottom: 3px; display: block; }
+        .label-text { font-size: 0.75rem; font-weight: bold; color: #777; margin-bottom: 2px; display: block; text-transform: uppercase; }
         .date-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; }
     </style>
 </head>
@@ -36,33 +36,37 @@
 
     <div id="work-prompt-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px; text-align:center;">
-            <h2>Daily Check-in</h2>
+            <h2>Daily Job Check-in</h2>
             <p id="allowance-msg" style="color:var(--green); font-weight:bold;"></p>
             <p>Did you work your job today?</p>
-            <input type="number" step="0.1" id="prompt-work-hours" placeholder="Hours (e.g. 8)">
-            <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes, Log Shift (+20m)</button>
+            <span class="label-text">HOURS WORKED</span>
+            <input type="number" step="0.1" id="prompt-work-hours" placeholder="e.g. 8.5">
+            <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes, Log Shift (+20m Blue)</button>
             <button class="btn btn-ghost" onclick="closeWorkPrompt()">No / Skip</button>
         </div>
     </div>
 
     <div id="home">
-        <div class="card"><h3 style="margin:0; text-align:center;">Free Time Bank</h3><div class="balance" id="bal">0m</div></div>
+        <div class="card">
+            <h3 style="margin:0; text-align:center;">Free Time Bank</h3>
+            <div class="balance" id="bal">0m</div>
+        </div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small id="timer-label" style="color:var(--green); font-weight:bold;">WORKING:</small>
+            <small style="color:var(--green); font-weight:bold;">TRACKING GROWTH:</small>
             <h3 id="work-timer-name-display" style="margin:5px 0;">Task</h3>
             <h2 id="work-timer-clock" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log</button>
         </div>
 
         <div id="active-blue-timer" class="card hidden" style="border: 2px solid var(--blue);">
-            <small style="color:var(--blue); font-weight:bold;">FREE TIME:</small>
+            <small style="color:var(--blue); font-weight:bold;">SPENDING TIME:</small>
             <h2 id="blue-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Spend</button>
         </div>
 
         <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Activity / Backdate</button>
-        <button class="btn btn-blue" onclick="startFreeTime()">Start Free Time Timer</button>
+        <button class="btn btn-blue" onclick="startFreeTime()">Start Live Free Time</button>
         
         <div class="nav-grid">
             <button class="btn btn-ghost" onclick="showScreen('planner')">📅 Planner</button>
@@ -81,23 +85,32 @@
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
+                <span class="label-text">TASK NAME</span>
                 <input type="text" id="new-name" placeholder="Name">
-                <input list="category-list" id="new-cat" placeholder="Category (e.g. Job, Health)">
-                <input type="number" id="new-pri-manual" value="3" min="1" max="5" placeholder="Priority">
+                <span class="label-text">CATEGORY</span>
+                <input list="category-list" id="new-cat" placeholder="e.g. Study, Exercise">
+                <span class="label-text">PRIORITY (1-5)</span>
+                <input type="number" id="new-pri-manual" value="3" min="1" max="5">
                 <label><input type="checkbox" id="save-to-lib"> Save to Library?</label>
             </div>
 
-            <div class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
+            <div id="manual-job-fields" class="hidden card" style="background:#fffdf0; border:1px solid var(--yellow);">
+                <span class="label-text">JOB HOURS</span>
+                <input type="number" step="0.1" id="manual-job-hours" placeholder="e.g. 7.5">
+                <p style="font-size:0.8rem; color:var(--yellow);">*Will award exactly 20m Blue Time</p>
+            </div>
+
+            <div id="log-duration-card" class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
                 <span class="label-text">DURATION (MINUTES)</span>
                 <input type="number" id="log-val" value="30">
                 <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Finished?</label>
-                <button class="btn btn-green" onclick="submitLog('manual')">Save Log Entry</button>
+                <button class="btn btn-green" onclick="submitLog('manual')">Save Entry</button>
             </div>
 
-            <div class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
-                <h3>Live Timer (Starts Now)</h3>
+            <div id="timer-options-card" class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
+                <h3>Live Timer</h3>
                 <select id="timer-interval"><option value="15">15m</option><option value="25" selected>25m</option><option value="60">60m</option></select>
-                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Timer</button>
+                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Timer Now</button>
             </div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -106,15 +119,28 @@
     <div id="planner" class="hidden">
         <div class="card">
             <h2>Task Planner</h2>
-            <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ New Planned Goal</button>
-            <div id="add-todo-form" class="hidden">
-                <input type="hidden" id="edit-todo-id">
-                <input type="text" id="todo-name" placeholder="Goal Name">
-                <input list="category-list" id="todo-cat" placeholder="Category">
-                <label><input type="checkbox" id="todo-recurring"> Recurring? 🔁</label>
-                <button class="btn btn-green" onclick="saveTodo()">Save Goal</button>
-            </div>
+            <button class="btn btn-green" onclick="openTodoModal()">+ New Planned Goal</button>
             <hr><div id="todo-list"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="manage-tasks" class="hidden">
+        <div class="card">
+            <h2>Task Library</h2>
+            <button class="btn btn-blue" onclick="openLibModal()">+ Add New Template</button>
+            <hr>
+            <input type="text" id="lib-search" placeholder="Search templates..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
+            <div id="task-list-container"></div>
+            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="history" class="hidden">
+        <div class="card">
+            <h2>History</h2>
+            <input type="text" id="history-search" placeholder="Search logs..." oninput="renderHistory()" style="border:2px solid var(--green)">
+            <div id="history-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
@@ -133,29 +159,39 @@
             </div>
             <button class="btn-ghost" id="toggle-view-btn" onclick="toggleReportView()">View: Basic Colors</button>
             <div id="report-content"></div>
-            <button class="btn btn-blue" onclick="emailReport()">📧 Email Report</button>
+            <button class="btn-ghost" onclick="emailReport()">📧 Email Data</button>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
-    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><button class="btn btn-blue" onclick="openLibModal()">+ New Template</button><hr><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-    <div id="history" class="hidden"><div class="card"><h2>History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
-
     <div id="lib-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px;">
-            <h3>Edit Template</h3>
+            <h3>Manage Template</h3>
             <input type="hidden" id="lib-edit-index">
-            <input type="text" id="lib-name" placeholder="Name">
-            <input list="category-list" id="lib-cat" placeholder="Category">
-            <input type="number" id="lib-pri" value="3">
-            <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
+            <span class="label-text">NAME</span><input type="text" id="lib-name">
+            <span class="label-text">CATEGORY</span><input list="category-list" id="lib-cat">
+            <span class="label-text">PRIORITY (1-5)</span><input type="number" id="lib-pri" value="3">
+            <button class="btn btn-green" onclick="saveLibraryItem()">Save Template</button>
             <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="todo-modal" class="modal-overlay hidden">
+        <div class="card" style="width:90%; max-width:400px;">
+            <h3>Manage Goal</h3>
+            <input type="hidden" id="edit-todo-id">
+            <span class="label-text">GOAL NAME</span><input type="text" id="todo-name">
+            <span class="label-text">CATEGORY</span><input list="category-list" id="todo-cat">
+            <label><input type="checkbox" id="todo-recurring"> Recurring Monthly? 🔁</label>
+            <button class="btn btn-green" onclick="saveTodo()">Save Goal</button>
+            <button class="btn btn-ghost" onclick="closeTodoModal()">Cancel</button>
         </div>
     </div>
 
     <datalist id="category-list"></datalist>
 
     <script>
+        // --- DATA ENGINE ---
         let rawData = JSON.parse(localStorage.getItem('prodAppData')) || {};
         let data = {
             balance: rawData.balance || 0,
@@ -169,18 +205,23 @@
 
         let currentTab = 'today';
         let reportOffset = 0;
-        let reportViewMode = 'macro'; // 'macro' or 'detail'
+        let reportViewMode = 'macro';
 
         function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
 
         window.onload = () => {
             const todayStr = new Date().toDateString();
+            // Daily +20m Allowance
             if (data.lastAllowanceDate !== todayStr) {
-                data.balance += 20; data.lastAllowanceDate = todayStr;
+                data.balance += 20;
+                data.lastAllowanceDate = todayStr;
                 document.getElementById('allowance-msg').innerText = "✓ +20m Daily Allowance Added!";
                 save();
             }
-            if (data.lastWorkCheck !== todayStr) document.getElementById('work-prompt-modal').classList.remove('hidden');
+            // Job Prompt
+            if (data.lastWorkCheck !== todayStr) {
+                document.getElementById('work-prompt-modal').classList.remove('hidden');
+            }
             document.getElementById('log-date').valueAsDate = new Date();
             setInterval(runTick, 1000);
             updateUI();
@@ -200,13 +241,52 @@
             }
         }
 
+        // --- NAVIGATION ---
+        function showScreen(id) {
+            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'manage-tasks') renderLibrary();
+            if(id === 'history') renderHistory();
+            if(id === 'stats') generateReport();
+            if(id === 'planner') renderPlanner();
+            if(id === 'log-activity') populateDropdown();
+            updateCategoryList();
+        }
+
         // --- LOGGING ---
+        function populateDropdown() {
+            let opts = '<option value="new">+ One-Off Green Log</option>';
+            opts += '<option value="yellow-manual">+ Log Job Shift (Yellow)</option>';
+            opts += '<option value="blue-manual">+ Manual Blue Time (Retroactive)</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
+            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
+            document.getElementById('task-select').innerHTML = opts;
+            checkNewTask('new');
+        }
+
+        function checkNewTask(v) { 
+            document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); 
+            document.getElementById('manual-job-fields').classList.toggle('hidden', v !== 'yellow-manual');
+            document.getElementById('log-duration-card').classList.toggle('hidden', v === 'yellow-manual');
+            document.getElementById('timer-options-card').classList.toggle('hidden', v === 'yellow-manual' || v === 'blue-manual');
+            document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-'));
+        }
+
         function submitLog(mode) {
             const v = document.getElementById('task-select').value;
             const logDate = document.getElementById('log-date').value || new Date().toISOString();
-            const mins = parseInt(document.getElementById('log-val').value) || 0;
+            
+            // Handle Manual Job Shift
+            if(v === 'yellow-manual') {
+                const hours = parseFloat(document.getElementById('manual-job-hours').value) || 0;
+                data.balance += 20;
+                data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(hours*60), date: logDate, logId: Date.now(), isYellow: true });
+                save(); showScreen('home'); return;
+            }
 
+            // Handle Manual Blue Time
             if(v === 'blue-manual') {
+                const mins = parseInt(document.getElementById('log-val').value) || 0;
                 data.balance -= mins;
                 data.logs.push({ name: "Manual Blue Time", cat: "Blue", reward: -mins, timeSpent: mins, date: logDate, logId: Date.now() });
                 save(); showScreen('home'); return;
@@ -227,7 +307,7 @@
             }
 
             if(mode === 'manual') {
-                completeLogging(s, mins, document.getElementById('is-complete').checked, logDate);
+                completeLogging(s, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked, logDate);
                 showScreen('home');
             } else {
                 data.activeTimer = { type: 'work', startTime: Date.now(), session: s };
@@ -237,25 +317,92 @@
 
         function completeLogging(s, mins, finished, customDate) {
             let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
-            // Tag as Job if category is Job or Work
-            const isJob = (s.cat.toLowerCase() === 'job' || s.cat.toLowerCase() === 'work');
-            if(isJob) reward = 0; // Job is fixed reward via shift
-
             if(s.isTodo) {
                 let t = data.todos.find(x => x.id == s.todoId); if(t) t.timeInvested += mins;
                 if(finished && t) { reward += (s.pri * 10); if(!t.recurring) data.todos = data.todos.filter(x => x.id != s.todoId); }
             }
             data.balance += reward;
-            data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate, logId: Date.now(), isYellow: isJob });
+            data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate, logId: Date.now() });
             save();
         }
 
-        // --- REPORTS & PIE TOGGLE ---
-        function toggleReportView() {
-            reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro';
-            document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic Colors' : 'Detailed Categories'}`;
-            generateReport();
+        // --- JOB PROMPT ---
+        function logWorkShift(prompt) {
+            const h = prompt ? document.getElementById('prompt-work-hours').value : 0;
+            if(!h) return;
+            data.balance += 20;
+            data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h*60), date: new Date().toISOString(), logId: Date.now(), isYellow: true });
+            closeWorkPrompt();
         }
+        function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
+
+        // --- HISTORY ---
+        function renderHistory() {
+            const q = document.getElementById('history-search').value.toLowerCase();
+            document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,30).map(l => `
+                <div class="list-item ${l.isYellow ? 'history-yellow' : (l.reward >= 0 ? 'history-green' : 'history-blue')}">
+                    <span><strong>${l.name}</strong><br><small>Spent: ${l.timeSpent}m | Earned: ${l.reward}m</small></span>
+                    <button class="btn-ghost" style="width:auto;" onclick="undoLog(${l.logId})">Undo</button>
+                </div>`).join('') || "No matching history.";
+        }
+        function undoLog(id) { if(confirm("Undo this entry?")) { const i = data.logs.findIndex(x => x.logId == id); data.balance -= data.logs[i].reward; data.logs.splice(i,1); save(); renderHistory(); } }
+
+        // --- LIBRARY MANAGEMENT ---
+        function renderLibrary() {
+            const q = document.getElementById('lib-search').value.toLowerCase();
+            document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => t.name.toLowerCase().includes(q) ? `
+                <div class="list-item">
+                    <span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-ghost" onclick="openLibModal(${i})">Edit</button>
+                        <button class="btn-ghost" style="color:red;" onclick="deleteLib(${i})">Del</button>
+                    </div>
+                </div>` : '').join('');
+        }
+        function openLibModal(idx = -1) {
+            document.getElementById('lib-modal').classList.remove('hidden');
+            if(idx === -1) { document.getElementById('lib-edit-index').value = "-1"; document.getElementById('lib-name').value = ""; document.getElementById('lib-cat').value = ""; }
+            else { const t = data.tasks[idx]; document.getElementById('lib-edit-index').value = idx; document.getElementById('lib-name').value = t.name; document.getElementById('lib-cat').value = t.cat; document.getElementById('lib-pri').value = t.pri; }
+        }
+        function saveLibraryItem() {
+            const i = parseInt(document.getElementById('lib-edit-index').value);
+            const t = { name: document.getElementById('lib-name').value, cat: document.getElementById('lib-cat').value || 'General', pri: parseInt(document.getElementById('lib-pri').value) || 3 };
+            if(i === -1) data.tasks.push(t); else data.tasks[i] = t;
+            save(); renderLibrary(); closeLibModal();
+        }
+        function deleteLib(i) { if(confirm("Delete template?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
+        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
+
+        // --- PLANNER MANAGEMENT ---
+        function renderPlanner() {
+            document.getElementById('todo-list').innerHTML = data.todos.map(t => `
+                <div class="list-item">
+                    <span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m</small></span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-ghost" onclick="openTodoModal(${t.id})">Edit</button>
+                        <button class="btn-ghost" style="color:red;" onclick="deleteTodo(${t.id})">Del</button>
+                    </div>
+                </div>`).join('') || "Planner empty.";
+        }
+        function openTodoModal(id = null) {
+            document.getElementById('todo-modal').classList.remove('hidden');
+            if(!id) { document.getElementById('edit-todo-id').value = ""; document.getElementById('todo-name').value = ""; document.getElementById('todo-cat').value = ""; }
+            else { const t = data.todos.find(x => x.id == id); document.getElementById('edit-todo-id').value = t.id; document.getElementById('todo-name').value = t.name; document.getElementById('todo-cat').value = t.cat; document.getElementById('todo-recurring').checked = t.recurring; }
+        }
+        function saveTodo() {
+            const id = document.getElementById('edit-todo-id').value;
+            const t = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 };
+            if(id) { let idx = data.todos.findIndex(x => x.id == id); t.timeInvested = data.todos[idx].timeInvested; data.todos[idx] = t; }
+            else data.todos.push(t);
+            save(); renderPlanner(); closeTodoModal();
+        }
+        function deleteTodo(id) { if(confirm("Delete goal?")) { data.todos = data.todos.filter(x => x.id != id); save(); renderPlanner(); } }
+        function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
+
+        // --- REPORTS ---
+        function toggleReportView() { reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro'; generateReport(); }
+        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
+        function changeReportDate(dir) { reportOffset += dir; generateReport(); }
 
         function generateReport() {
             const targetDate = new Date(); targetDate.setDate(targetDate.getDate() + reportOffset);
@@ -278,28 +425,17 @@
             });
 
             let grey = Math.max(0, periodMins - (yellow + green + spent));
-            let slices = [];
             const total = yellow + green + spent + grey;
+            let slices = [];
 
             if (reportViewMode === 'macro') {
-                slices = [
-                    `var(--yellow) 0deg ${(yellow/total)*360}deg`,
-                    `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`,
-                    `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`,
-                    `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg`
-                ];
+                slices = [`var(--yellow) 0deg ${(yellow/total)*360}deg`, `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`, `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`, `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg` ];
             } else {
                 let currentDeg = 0;
-                // Yellow
                 if(yellow > 0) { slices.push(`var(--yellow) ${currentDeg}deg ${currentDeg + (yellow/total)*360}deg`); currentDeg += (yellow/total)*360; }
-                // Itemized Green Categories
-                const catColors = ['#27ae60', '#2ecc71', '#16a085', '#1abc9c', '#a29bfe'];
                 Object.keys(cats).forEach((c, i) => {
-                    let deg = (cats[c]/total)*360;
-                    slices.push(`${catColors[i % catColors.length]} ${currentDeg}deg ${currentDeg + deg}deg`);
-                    currentDeg += deg;
+                    let deg = (cats[c]/total)*360; slices.push(`hsl(${i*70}, 70%, 50%) ${currentDeg}deg ${currentDeg + deg}deg`); currentDeg += deg;
                 });
-                // Blue and Grey
                 slices.push(`var(--blue) ${currentDeg}deg ${currentDeg + (spent/total)*360}deg`);
                 currentDeg += (spent/total)*360;
                 slices.push(`var(--grey) ${currentDeg}deg 360deg`);
@@ -313,14 +449,13 @@
                     <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>
                     <div><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>
                 </div>
-                <h3>Goal Investment</h3>
-                ${data.todos.map(t => `<div>${t.name}: ${t.timeInvested}m</div>`).join('') || "None"}
-                <h3>Focus Breakdown</h3>
-                ${Object.keys(cats).map(c => `<div>${c}: ${cats[c]}m</div>`).join('') || "No growth logs."}
+                <h3>Category Breakdown</h3>
+                ${Object.keys(cats).map(c => `<div style="font-size:0.9rem;">${c}: ${cats[c]}m</div>`).join('') || "No growth logs."}
             `;
         }
 
-        // --- THE REST (UTILITIES) ---
+        // --- UTILS ---
+        function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
         function startFreeTime() { if(data.balance > 0) { data.activeTimer = { type: 'blue', startTime: Date.now() }; save(); } }
         function stopFreeTime() {
             const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000);
@@ -333,47 +468,11 @@
             completeLogging(data.activeTimer.session, mins, false, new Date().toISOString());
             data.activeTimer = null; save();
         }
-        function logWorkShift(prompt) {
-            const h = prompt ? document.getElementById('prompt-work-hours').value : 0;
-            if(!h) return;
-            data.balance += 20;
-            data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h*60), date: new Date().toISOString(), logId: Date.now(), isYellow: true });
-            closeWorkPrompt();
-        }
-        function showScreen(id) {
-            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            if(id === 'manage-tasks') renderLibrary();
-            if(id === 'history') renderHistory();
-            if(id === 'stats') generateReport();
-            if(id === 'planner') renderPlanner();
-            if(id === 'log-activity') populateDropdown();
-            updateCategoryList();
-        }
-        function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); }
-        function populateDropdown() {
-            let opts = '<option value="new">+ One-Off Log</option><option value="blue-manual">+ Manual Blue Time</option>';
-            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
-            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
-            document.getElementById('task-select').innerHTML = opts;
-        }
-        function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
-        function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
-        function changeReportDate(dir) { reportOffset += dir; generateReport(); }
-        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
-        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
         function updateCategoryList() {
             const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]);
             document.getElementById('category-list').innerHTML = Array.from(cats).filter(c=>c).map(c=>`<option value="${c}">`).join('');
         }
-        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong></span><button class="btn-ghost" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Empty."; }
-        function saveTodo() { const t = { id: Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 }; data.todos.push(t); save(); renderPlanner(); }
-        function deleteTodo(id) { data.todos = data.todos.filter(x => x.id != id); save(); renderPlanner(); }
-        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => `<div class="list-item"><span><strong>${t.name}</strong></span><button class="btn-ghost" onclick="deleteLib(${i})">Del</button></div>`).join(''); }
-        function deleteLib(i) { data.tasks.splice(i, 1); save(); renderLibrary(); }
-        function renderHistory() { document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => `<div class="list-item"><span>${l.name} (${l.timeSpent}m)</span><button onclick="undoLog(${l.logId})">Undo</button></div>`).join(''); }
-        function undoLog(id) { const i = data.logs.findIndex(x => x.logId === id); data.balance -= data.logs[i].reward; data.logs.splice(i, 1); save(); renderHistory(); }
-        function emailReport() { window.location.href = `mailto:?subject=Time Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
+        function emailReport() { window.location.href = `mailto:?subject=Time Ledger Data&body=${encodeURIComponent(JSON.stringify(data))}`; }
     </script>
 </body>
 </html>
