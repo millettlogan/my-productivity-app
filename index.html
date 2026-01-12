@@ -174,7 +174,7 @@
             </div>
             <button class="btn-ghost" id="toggle-view-btn" onclick="toggleReportView()">View: Basic Colors</button>
             <div id="report-content"></div>
-            <hr>
+<div id="report-pending-goals" style="margin-top: 20px;"></div> <hr>
             <button class="btn btn-blue" onclick="emailReport()">📧 Email Data Backup</button>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -415,6 +415,27 @@
     document.getElementById('report-content').innerHTML = `
         <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
         <div class="legend">${legendItems}</div>`;
+            // Add Pending Goals to Report
+    const pending = data.todos.filter(t => {
+        if (!t.dueDate) return true;
+        const d = new Date(t.dueDate);
+        const now = new Date();
+        return d >= now || t.timeInvested > 0; // Show upcoming or in-progress
+    });
+
+    let pendingHtml = '<h4>Pending Goals</h4>';
+    if (pending.length === 0) {
+        pendingHtml += '<p style="font-size:0.8rem; color:#888;">No active goals in the planner.</p>';
+    } else {
+        pending.forEach(t => {
+            pendingHtml += `
+                <div style="font-size:0.8rem; padding:8px; background:#f0f0f0; border-radius:6px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>${t.name}</span>
+                    <span style="color:var(--blue); font-weight:bold;">${t.timeInvested || 0}m logged</span>
+                </div>`;
+        });
+    }
+    document.getElementById('report-pending-goals').innerHTML = pendingHtml;
 }
         // --- CORE HELPERS ---
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
@@ -431,4 +452,5 @@
     </script>
 </body>
 </html>
+
 
