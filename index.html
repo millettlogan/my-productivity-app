@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green vs Blue: Ledger Edition</title>
+    <title>Green vs Blue: Unified Edition</title>
     <style>
         :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; --yellow: #f39c12; --grey: #95a5a6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); line-height: 1.4; }
@@ -17,15 +17,15 @@
         .hidden { display: none !important; }
         input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-size: 1rem; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; }
-        .history-green { border-left-color: var(--green); background: #f0fff4; }
-        .history-blue { border-left-color: var(--blue); background: #f0f7ff; }
-        .history-yellow { border-left-color: var(--yellow); background: #fffdf0; }
+        .history-green { border-left-color: var(--green); }
+        .history-blue { border-left-color: var(--blue); }
+        .history-yellow { border-left-color: var(--yellow); }
         .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .report-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
         .tab { flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 20px; border: 1px solid var(--blue); color: var(--blue); background: white; cursor: pointer; text-align: center; }
         .tab.active { background: var(--blue); color: white; }
-        .pie-chart { width: 160px; height: 160px; border-radius: 50%; margin: 15px auto; border: 4px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        .pie-chart { width: 180px; height: 180px; border-radius: 50%; margin: 15px auto; border: 5px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
         .legend { font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding: 10px; background: #fcfcfc; border-radius: 8px; }
         .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; }
         .label-text { font-size: 0.8rem; font-weight: bold; color: #777; margin-bottom: 3px; display: block; }
@@ -39,34 +39,30 @@
             <h2>Daily Check-in</h2>
             <p id="allowance-msg" style="color:var(--green); font-weight:bold;"></p>
             <p>Did you work your job today?</p>
-            <span class="label-text">HOURS WORKED</span>
-            <input type="number" step="0.1" id="prompt-work-hours" placeholder="e.g. 8.5">
+            <input type="number" step="0.1" id="prompt-work-hours" placeholder="Hours (e.g. 8)">
             <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes, Log Shift (+20m)</button>
             <button class="btn btn-ghost" onclick="closeWorkPrompt()">No / Skip</button>
         </div>
     </div>
 
     <div id="home">
-        <div class="card">
-            <h3 style="margin:0; text-align:center;">Free Time Bank</h3>
-            <div class="balance" id="bal">0m</div>
-        </div>
+        <div class="card"><h3 style="margin:0; text-align:center;">Free Time Bank</h3><div class="balance" id="bal">0m</div></div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small style="color:var(--green); font-weight:bold;">WORKING ON:</small>
+            <small id="timer-label" style="color:var(--green); font-weight:bold;">WORKING:</small>
             <h3 id="work-timer-name-display" style="margin:5px 0;">Task</h3>
             <h2 id="work-timer-clock" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log</button>
         </div>
 
         <div id="active-blue-timer" class="card hidden" style="border: 2px solid var(--blue);">
-            <small style="color:var(--blue); font-weight:bold;">FREE TIME RUNNING:</small>
+            <small style="color:var(--blue); font-weight:bold;">FREE TIME:</small>
             <h2 id="blue-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Spend</button>
         </div>
 
-        <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Activity / Start Timer</button>
-        <button class="btn btn-blue" onclick="startFreeTime()">Start Timer session</button>
+        <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Activity / Backdate</button>
+        <button class="btn btn-blue" onclick="startFreeTime()">Start Free Time Timer</button>
         
         <div class="nav-grid">
             <button class="btn btn-ghost" onclick="showScreen('planner')">📅 Planner</button>
@@ -81,34 +77,28 @@
             <h2>Log Activity</h2>
             <span class="label-text">DATE OF ACTIVITY</span>
             <input type="date" id="log-date">
-
             <span class="label-text">CHOOSE TASK</span>
             <select id="task-select" onchange="checkNewTask(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
-                <span class="label-text">NEW TASK NAME</span>
                 <input type="text" id="new-name" placeholder="Name">
-                <span class="label-text">CATEGORY</span>
-                <input list="category-list" id="new-cat" placeholder="e.g. Health, Study">
-                <span class="label-text">PRIORITY (1-5)</span>
-                <input type="number" id="new-pri-manual" value="3" min="1" max="5">
+                <input list="category-list" id="new-cat" placeholder="Category (e.g. Job, Health)">
+                <input type="number" id="new-pri-manual" value="3" min="1" max="5" placeholder="Priority">
                 <label><input type="checkbox" id="save-to-lib"> Save to Library?</label>
             </div>
 
             <div class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
-                <span class="label-text">MANUAL LOG (MINUTES)</span>
+                <span class="label-text">DURATION (MINUTES)</span>
                 <input type="number" id="log-val" value="30">
-                <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Task Finished?</label>
-                <button class="btn btn-green" onclick="submitLog('manual')">Log Activity</button>
+                <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Finished?</label>
+                <button class="btn btn-green" onclick="submitLog('manual')">Save Log Entry</button>
             </div>
 
             <div class="card" style="background:#f0f7ff; border:1px solid var(--blue);">
                 <h3>Live Timer (Starts Now)</h3>
-                <label><input type="checkbox" id="timer-sound" checked> Interval Chime?</label>
-                <select id="timer-interval"><option value="15">15m</option><option value="25" selected>25m</option><option value="45">45m</option><option value="60">60m</option></select>
-                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Live Timer</button>
+                <select id="timer-interval"><option value="15">15m</option><option value="25" selected>25m</option><option value="60">60m</option></select>
+                <button class="btn btn-blue" onclick="submitLog('timer')">▶ Start Timer</button>
             </div>
-            
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
@@ -117,39 +107,14 @@
         <div class="card">
             <h2>Task Planner</h2>
             <button class="btn btn-green" onclick="toggleElement('add-todo-form')">+ New Planned Goal</button>
-            <div id="add-todo-form" class="hidden" style="margin-top:10px;">
+            <div id="add-todo-form" class="hidden">
                 <input type="hidden" id="edit-todo-id">
-                <span class="label-text">GOAL NAME</span>
-                <input type="text" id="todo-name">
-                <span class="label-text">CATEGORY</span>
-                <input list="category-list" id="todo-cat">
-                <span class="label-text">TARGET DATE</span>
-                <input type="date" id="todo-date">
-                <label><input type="checkbox" id="todo-recurring"> Recurring Monthly? 🔁</label>
+                <input type="text" id="todo-name" placeholder="Goal Name">
+                <input list="category-list" id="todo-cat" placeholder="Category">
+                <label><input type="checkbox" id="todo-recurring"> Recurring? 🔁</label>
                 <button class="btn btn-green" onclick="saveTodo()">Save Goal</button>
             </div>
-            <hr>
-            <div id="todo-list"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
-    <div id="manage-tasks" class="hidden">
-        <div class="card">
-            <h2>Task Library</h2>
-            <button class="btn btn-blue" onclick="openLibModal()">+ Add New Template</button>
-            <hr>
-            <input type="text" id="lib-search" placeholder="Search templates..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
-            <div id="task-list-container"></div>
-            <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
-        </div>
-    </div>
-
-    <div id="history" class="hidden">
-        <div class="card">
-            <h2>History</h2>
-            <input type="text" id="history-search" placeholder="Search logs..." oninput="renderHistory()">
-            <div id="history-list"></div>
+            <hr><div id="todo-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
@@ -161,30 +126,29 @@
                 <button class="tab" id="tab-week" onclick="setReportTab('week')">Weekly</button>
                 <button class="tab" id="tab-month" onclick="setReportTab('month')">Monthly</button>
             </div>
-            
             <div class="date-nav" id="report-date-nav">
                 <button class="btn-ghost" style="width:auto; padding:5px 15px;" onclick="changeReportDate(-1)">❮</button>
                 <span id="current-report-label">Today</span>
                 <button class="btn-ghost" style="width:auto; padding:5px 15px;" onclick="changeReportDate(1)">❯</button>
             </div>
-
+            <button class="btn-ghost" id="toggle-view-btn" onclick="toggleReportView()">View: Basic Colors</button>
             <div id="report-content"></div>
-            <button class="btn btn-blue" onclick="emailReport()">📧 Email This View</button>
+            <button class="btn btn-blue" onclick="emailReport()">📧 Email Report</button>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
     </div>
 
+    <div id="manage-tasks" class="hidden"><div class="card"><h2>Library</h2><button class="btn btn-blue" onclick="openLibModal()">+ New Template</button><hr><div id="task-list-container"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+    <div id="history" class="hidden"><div class="card"><h2>History</h2><div id="history-list"></div><button class="btn btn-ghost" onclick="showScreen('home')">Back</button></div></div>
+
     <div id="lib-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px;">
-            <h3 id="lib-modal-title">Edit Template</h3>
+            <h3>Edit Template</h3>
             <input type="hidden" id="lib-edit-index">
-            <span class="label-text">TEMPLATE NAME</span>
-            <input type="text" id="lib-name">
-            <span class="label-text">CATEGORY</span>
-            <input list="category-list" id="lib-cat">
-            <span class="label-text">PRIORITY (1-5)</span>
+            <input type="text" id="lib-name" placeholder="Name">
+            <input list="category-list" id="lib-cat" placeholder="Category">
             <input type="number" id="lib-pri" value="3">
-            <button class="btn btn-green" onclick="saveLibraryItem()">Save Changes</button>
+            <button class="btn btn-green" onclick="saveLibraryItem()">Save</button>
             <button class="btn btn-ghost" onclick="closeLibModal()">Cancel</button>
         </div>
     </div>
@@ -192,7 +156,6 @@
     <datalist id="category-list"></datalist>
 
     <script>
-        // --- DATA ---
         let rawData = JSON.parse(localStorage.getItem('prodAppData')) || {};
         let data = {
             balance: rawData.balance || 0,
@@ -201,20 +164,19 @@
             todos: rawData.todos || [],
             lastAllowanceDate: rawData.lastAllowanceDate || "",
             lastWorkCheck: rawData.lastWorkCheck || "",
-            activeTimer: rawData.activeTimer || null,
-            lastChime: rawData.lastChime || 0
+            activeTimer: rawData.activeTimer || null
         };
 
         let currentTab = 'today';
-        let reportOffset = 0; // Days from today for reporting
+        let reportOffset = 0;
+        let reportViewMode = 'macro'; // 'macro' or 'detail'
 
         function save() { localStorage.setItem('prodAppData', JSON.stringify(data)); updateUI(); }
 
         window.onload = () => {
             const todayStr = new Date().toDateString();
             if (data.lastAllowanceDate !== todayStr) {
-                data.balance += 20;
-                data.lastAllowanceDate = todayStr;
+                data.balance += 20; data.lastAllowanceDate = todayStr;
                 document.getElementById('allowance-msg').innerText = "✓ +20m Daily Allowance Added!";
                 save();
             }
@@ -224,68 +186,33 @@
             updateUI();
         };
 
-        // --- TICK ENGINE ---
         function runTick() {
             if (!data.activeTimer) return;
-            const now = Date.now();
-            const elapsed = Math.floor((now - data.activeTimer.startTime) / 1000);
+            const elapsed = Math.floor((Date.now() - data.activeTimer.startTime) / 1000);
             const clock = Math.floor(elapsed/60).toString().padStart(2,'0') + ":" + (elapsed%60).toString().padStart(2,'0');
-            
             if (data.activeTimer.type === 'work') {
                 document.getElementById('active-work-timer').classList.remove('hidden');
                 document.getElementById('work-timer-clock').innerText = clock;
                 document.getElementById('work-timer-name-display').innerText = data.activeTimer.session.name;
-                const intervalMs = data.activeTimer.session.interval * 60000;
-                if (data.activeTimer.session.useSound && (now - data.activeTimer.startTime) > (data.lastChime + intervalMs)) {
-                    playChime(); data.lastChime = (now - data.activeTimer.startTime); save();
-                }
             } else {
                 document.getElementById('active-blue-timer').classList.remove('hidden');
                 document.getElementById('blue-timer-display').innerText = clock;
             }
         }
 
-        function playChime() { try { const ctx = new AudioContext(); const osc = ctx.createOscillator(); const g = ctx.createGain(); osc.connect(g); g.connect(ctx.destination); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1); osc.start(); osc.stop(ctx.currentTime + 1); } catch(e){} }
-
-        // --- NAVIGATION & LOGGING ---
-        function showScreen(id) {
-            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            if(id === 'manage-tasks') renderLibrary();
-            if(id === 'history') renderHistory();
-            if(id === 'stats') generateReport();
-            if(id === 'planner') renderPlanner();
-            if(id === 'log-activity') populateDropdown();
-            updateCategoryList();
-        }
-
-        function populateDropdown() {
-            let opts = '<option value="new">+ Manual Work Log</option>';
-            opts += '<option value="blue-manual">+ Manual Blue Time (Forget Timer?)</option>';
-            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
-            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
-            document.getElementById('task-select').innerHTML = opts;
-            checkNewTask('new');
-        }
-
-        function checkNewTask(v) { 
-            document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); 
-            document.getElementById('complete-check-label').classList.toggle('hidden', !v.startsWith('todo-'));
-        }
-
+        // --- LOGGING ---
         function submitLog(mode) {
             const v = document.getElementById('task-select').value;
-            const logDateInput = document.getElementById('log-date').value;
-            const targetDate = logDateInput ? new Date(logDateInput + "T12:00:00").toISOString() : new Date().toISOString();
+            const logDate = document.getElementById('log-date').value || new Date().toISOString();
+            const mins = parseInt(document.getElementById('log-val').value) || 0;
 
             if(v === 'blue-manual') {
-                const mins = parseInt(document.getElementById('log-val').value) || 0;
                 data.balance -= mins;
-                data.logs.push({ name: "Manual Blue Time", cat: "Blue", reward: -mins, timeSpent: mins, date: targetDate, logId: Date.now() });
+                data.logs.push({ name: "Manual Blue Time", cat: "Blue", reward: -mins, timeSpent: mins, date: logDate, logId: Date.now() });
                 save(); showScreen('home'); return;
             }
 
-            let s = { name: "Task", cat: "General", pri: 3, isTodo: false, todoId: null };
+            let s = { name: "Task", cat: "General", pri: 3, isTodo: false };
             if(v === 'new') {
                 s.name = document.getElementById('new-name').value || "Quick Task";
                 s.cat = document.getElementById('new-cat').value || "General";
@@ -300,59 +227,42 @@
             }
 
             if(mode === 'manual') {
-                completeLogging(s, parseInt(document.getElementById('log-val').value) || 0, document.getElementById('is-complete').checked, targetDate);
+                completeLogging(s, mins, document.getElementById('is-complete').checked, logDate);
                 showScreen('home');
             } else {
-                s.useSound = document.getElementById('timer-sound').checked;
-                s.interval = parseInt(document.getElementById('timer-interval').value);
                 data.activeTimer = { type: 'work', startTime: Date.now(), session: s };
-                data.lastChime = 0; save(); showScreen('home');
+                save(); showScreen('home');
             }
         }
 
         function completeLogging(s, mins, finished, customDate) {
             let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
+            // Tag as Job if category is Job or Work
+            const isJob = (s.cat.toLowerCase() === 'job' || s.cat.toLowerCase() === 'work');
+            if(isJob) reward = 0; // Job is fixed reward via shift
+
             if(s.isTodo) {
                 let t = data.todos.find(x => x.id == s.todoId); if(t) t.timeInvested += mins;
-                if(finished && t) { 
-                    reward += (s.pri * 10); 
-                    if(t.recurring) t.timeInvested = 0; else data.todos = data.todos.filter(x => x.id != s.todoId);
-                }
+                if(finished && t) { reward += (s.pri * 10); if(!t.recurring) data.todos = data.todos.filter(x => x.id != s.todoId); }
             }
             data.balance += reward;
-            data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate || new Date().toISOString(), logId: Date.now() });
+            data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate, logId: Date.now(), isYellow: isJob });
             save();
         }
 
-        function stopWorkTimer() {
-            const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000);
-            completeLogging(data.activeTimer.session, mins, false, new Date().toISOString());
-            data.activeTimer = null; save();
+        // --- REPORTS & PIE TOGGLE ---
+        function toggleReportView() {
+            reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro';
+            document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic Colors' : 'Detailed Categories'}`;
+            generateReport();
         }
 
-        function startFreeTime() { if(data.balance > 0) { data.activeTimer = { type: 'blue', startTime: Date.now() }; save(); } }
-        function stopFreeTime() {
-            const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000);
-            data.balance -= mins;
-            data.logs.push({name: 'Free Time', cat: 'Blue', reward: -mins, timeSpent: mins, date: new Date().toISOString(), logId: Date.now()});
-            data.activeTimer = null; save();
-        }
-
-        // --- REPORTS ---
-        function changeReportDate(dir) { reportOffset += dir; generateReport(); }
-        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
-        
         function generateReport() {
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + reportOffset);
-            
+            const targetDate = new Date(); targetDate.setDate(targetDate.getDate() + reportOffset);
             document.getElementById('current-report-label').innerText = reportOffset === 0 ? "Today" : targetDate.toLocaleDateString(undefined, {month:'short', day:'numeric'});
-            document.getElementById('report-date-nav').style.display = (currentTab === 'today') ? 'flex' : 'none';
-
+            
             let yellow = 0, green = 0, spent = 0, cats = {};
-            let periodMins = 1440; 
-            if(currentTab === 'week') periodMins = 10080;
-            if(currentTab === 'month') periodMins = 43200;
+            let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
 
             const filtered = data.logs.filter(l => {
                 const ld = new Date(l.date);
@@ -362,96 +272,108 @@
             });
 
             filtered.forEach(l => {
-                if(l.name === "Job Shift") yellow += l.timeSpent;
+                if(l.isYellow || l.cat.toLowerCase() === 'job') yellow += l.timeSpent;
                 else if(l.reward >= 0) { green += l.timeSpent; cats[l.cat] = (cats[l.cat]||0) + l.timeSpent; }
                 else spent += Math.abs(l.reward);
             });
 
             let grey = Math.max(0, periodMins - (yellow + green + spent));
-            let total = yellow + green + spent + grey;
-            const slices = [
-                `var(--yellow) 0deg ${(yellow/total)*360}deg`,
-                `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`,
-                `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`,
-                `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg`
-            ];
+            let slices = [];
+            const total = yellow + green + spent + grey;
+
+            if (reportViewMode === 'macro') {
+                slices = [
+                    `var(--yellow) 0deg ${(yellow/total)*360}deg`,
+                    `var(--green) ${(yellow/total)*360}deg ${((yellow+green)/total)*360}deg`,
+                    `var(--blue) ${((yellow+green)/total)*360}deg ${((yellow+green+spent)/total)*360}deg`,
+                    `var(--grey) ${((yellow+green+spent)/total)*360}deg 360deg`
+                ];
+            } else {
+                let currentDeg = 0;
+                // Yellow
+                if(yellow > 0) { slices.push(`var(--yellow) ${currentDeg}deg ${currentDeg + (yellow/total)*360}deg`); currentDeg += (yellow/total)*360; }
+                // Itemized Green Categories
+                const catColors = ['#27ae60', '#2ecc71', '#16a085', '#1abc9c', '#a29bfe'];
+                Object.keys(cats).forEach((c, i) => {
+                    let deg = (cats[c]/total)*360;
+                    slices.push(`${catColors[i % catColors.length]} ${currentDeg}deg ${currentDeg + deg}deg`);
+                    currentDeg += deg;
+                });
+                // Blue and Grey
+                slices.push(`var(--blue) ${currentDeg}deg ${currentDeg + (spent/total)*360}deg`);
+                currentDeg += (spent/total)*360;
+                slices.push(`var(--grey) ${currentDeg}deg 360deg`);
+            }
 
             document.getElementById('report-content').innerHTML = `
-                <div class="card" style="text-align:center;">
-                    <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
-                    <div class="legend">
-                        <div><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>
-                        <div><span class="dot" style="background:var(--green)"></span>Growth: ${green}m</div>
-                        <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>
-                        <div><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>
-                    </div>
+                <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
+                <div class="legend">
+                    <div><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>
+                    <div><span class="dot" style="background:var(--green)"></span>Growth: ${green}m</div>
+                    <div><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>
+                    <div><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>
                 </div>
-                <h3>Active Goal Progress</h3>
-                ${data.todos.map(t => `<div style="font-size:0.9rem; margin-bottom:5px;">${t.recurring?'🔁':'📌'} <strong>${t.name}</strong>: ${t.timeInvested}m invested</div>`).join('') || "No active planner goals."}
-                <hr>
-                <h3>Category Focus</h3>
-                ${Object.keys(cats).map(c => `<div>${c}: ${cats[c]}m</div>`).join('') || "No work logged."}
+                <h3>Goal Investment</h3>
+                ${data.todos.map(t => `<div>${t.name}: ${t.timeInvested}m</div>`).join('') || "None"}
+                <h3>Focus Breakdown</h3>
+                ${Object.keys(cats).map(c => `<div>${c}: ${cats[c]}m</div>`).join('') || "No growth logs."}
             `;
         }
 
-        // --- THE REST (PLANNER, LIBRARY, JOB) ---
-        function logWorkShift(fromPrompt) {
-            const h = fromPrompt ? document.getElementById('prompt-work-hours').value : 8;
+        // --- THE REST (UTILITIES) ---
+        function startFreeTime() { if(data.balance > 0) { data.activeTimer = { type: 'blue', startTime: Date.now() }; save(); } }
+        function stopFreeTime() {
+            const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000);
+            data.balance -= mins;
+            data.logs.push({name: 'Free Time', cat: 'Blue', reward: -mins, timeSpent: mins, date: new Date().toISOString(), logId: Date.now()});
+            data.activeTimer = null; save();
+        }
+        function stopWorkTimer() {
+            const mins = Math.ceil((Date.now() - data.activeTimer.startTime) / 60000);
+            completeLogging(data.activeTimer.session, mins, false, new Date().toISOString());
+            data.activeTimer = null; save();
+        }
+        function logWorkShift(prompt) {
+            const h = prompt ? document.getElementById('prompt-work-hours').value : 0;
             if(!h) return;
             data.balance += 20;
-            data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h * 60), date: new Date().toISOString(), logId: Date.now() });
-            if(fromPrompt) closeWorkPrompt(); else save();
+            data.logs.push({ name: "Job Shift", cat: "Job", reward: 20, timeSpent: Math.round(h*60), date: new Date().toISOString(), logId: Date.now(), isYellow: true });
+            closeWorkPrompt();
         }
-        function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
-        function renderPlanner() {
-            document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong><br><small>${t.timeInvested}m</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="editTodo(${t.id})">Edit</button><button class="btn-ghost" onclick="deleteTodo(${t.id})">Del</button></div></div>`).join('') || "Planner empty.";
+        function showScreen(id) {
+            document.querySelectorAll('body > div:not(.modal-overlay)').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'manage-tasks') renderLibrary();
+            if(id === 'history') renderHistory();
+            if(id === 'stats') generateReport();
+            if(id === 'planner') renderPlanner();
+            if(id === 'log-activity') populateDropdown();
+            updateCategoryList();
         }
-        function saveTodo() {
-            const id = document.getElementById('edit-todo-id').value;
-            const t = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', date: document.getElementById('todo-date').value, pri: 3, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0 };
-            if(!t.name) return;
-            if(id) { let idx = data.todos.findIndex(x => x.id == id); t.timeInvested = data.todos[idx].timeInvested; data.todos[idx] = t; } 
-            else data.todos.push(t);
-            save(); renderPlanner(); toggleElement('add-todo-form');
+        function checkNewTask(v) { document.getElementById('new-task-fields').classList.toggle('hidden', v !== 'new'); }
+        function populateDropdown() {
+            let opts = '<option value="new">+ One-Off Log</option><option value="blue-manual">+ Manual Blue Time</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
+            data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
+            document.getElementById('task-select').innerHTML = opts;
         }
-        function editTodo(id) {
-            const t = data.todos.find(x => x.id == id);
-            document.getElementById('edit-todo-id').value = t.id;
-            document.getElementById('todo-name').value = t.name;
-            document.getElementById('todo-cat').value = t.cat;
-            document.getElementById('todo-recurring').checked = t.recurring;
-            toggleElement('add-todo-form');
-        }
-        function deleteTodo(id) { if(confirm("Delete?")) { data.todos = data.todos.filter(x => x.id != id); save(); renderPlanner(); } }
-        function renderLibrary() {
-            const q = document.getElementById('lib-search').value.toLowerCase();
-            document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => (t.name.toLowerCase().includes(q)) ? `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" style="color:red;" onclick="deleteLibItem(${i})">Del</button></div></div>` : '').join('');
-        }
-        function openLibModal(idx = -1) {
-            document.getElementById('lib-modal').classList.remove('hidden');
-            if(idx === -1) { document.getElementById('lib-edit-index').value = "-1"; document.getElementById('lib-name').value = ""; document.getElementById('lib-cat').value = ""; }
-            else { const t = data.tasks[idx]; document.getElementById('lib-edit-index').value = idx; document.getElementById('lib-name').value = t.name; document.getElementById('lib-cat').value = t.cat; }
-        }
-        function saveLibraryItem() {
-            const i = parseInt(document.getElementById('lib-edit-index').value);
-            const t = { name: document.getElementById('lib-name').value, cat: document.getElementById('lib-cat').value || 'General', pri: parseInt(document.getElementById('lib-pri').value) || 3 };
-            if(i === -1) data.tasks.push(t); else data.tasks[i] = t;
-            save(); renderLibrary(); closeLibModal();
-        }
-        function deleteLibItem(i) { if(confirm("Delete?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
-        function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
         function updateUI() { document.getElementById('bal').innerText = Math.max(0, data.balance) + 'm'; }
+        function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
+        function changeReportDate(dir) { reportOffset += dir; generateReport(); }
+        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
         function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function renderHistory() {
-            const q = document.getElementById('history-search').value.toLowerCase();
-            document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,30).map(l => `<div class="list-item ${l.reward >= 0 ? 'history-green' : 'history-blue'}"><span><strong>${l.name}</strong><br><small>${l.reward}m | ${new Date(l.date).toLocaleDateString()}</small></span><button class="btn-ghost" onclick="undoLog(${l.logId})">Undo</button></div>`).join('');
-        }
-        function undoLog(id) { if(confirm("Undo?")) { const i = data.logs.findIndex(x => x.logId == id); data.balance -= data.logs[i].reward; data.logs.splice(i,1); save(); renderHistory(); } }
         function updateCategoryList() {
             const cats = new Set([...data.tasks.map(t=>t.cat), ...data.todos.map(t=>t.cat), ...data.logs.map(l=>l.cat)]);
             document.getElementById('category-list').innerHTML = Array.from(cats).filter(c=>c).map(c=>`<option value="${c}">`).join('');
         }
-        function emailReport() { window.location.href = `mailto:?subject=Time Ledger&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
+        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong></span><button class="btn-ghost" onclick="deleteTodo(${t.id})">Del</button></div>`).join('') || "Empty."; }
+        function saveTodo() { const t = { id: Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 }; data.todos.push(t); save(); renderPlanner(); }
+        function deleteTodo(id) { data.todos = data.todos.filter(x => x.id != id); save(); renderPlanner(); }
+        function renderLibrary() { document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => `<div class="list-item"><span><strong>${t.name}</strong></span><button class="btn-ghost" onclick="deleteLib(${i})">Del</button></div>`).join(''); }
+        function deleteLib(i) { data.tasks.splice(i, 1); save(); renderLibrary(); }
+        function renderHistory() { document.getElementById('history-list').innerHTML = [...data.logs].reverse().slice(0,20).map(l => `<div class="list-item"><span>${l.name} (${l.timeSpent}m)</span><button onclick="undoLog(${l.logId})">Undo</button></div>`).join(''); }
+        function undoLog(id) { const i = data.logs.findIndex(x => x.logId === id); data.balance -= data.logs[i].reward; data.logs.splice(i, 1); save(); renderHistory(); }
+        function emailReport() { window.location.href = `mailto:?subject=Time Report&body=${encodeURIComponent(document.getElementById('report-content').innerText)}`; }
     </script>
 </body>
 </html>
