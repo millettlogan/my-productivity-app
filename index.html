@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green vs Blue: Professional Edition</title>
+    <title>Green vs Blue: Master Edition</title>
     <style>
         :root { --green: #27ae60; --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --gold: #f1c40f; --red: #e74c3c; --yellow: #f39c12; --grey: #95a5a6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); line-height: 1.4; }
@@ -30,6 +30,7 @@
         .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; }
         .label-text { font-size: 0.75rem; font-weight: bold; color: #777; margin-bottom: 2px; display: block; text-transform: uppercase; }
         .ratio-badge { background: #eef; color: var(--blue); padding: 2px 8px; border-radius: 4px; font-weight: bold; float: right; }
+        .date-badge { font-size: 0.7rem; color: #e67e22; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -37,10 +38,8 @@
     <div id="work-prompt-modal" class="modal-overlay hidden">
         <div class="card" style="width:90%; max-width:400px; text-align:center;">
             <h2>Daily Job Check-in</h2>
-            <p id="allowance-msg" style="color:var(--green); font-weight:bold;"></p>
             <p>Did you work your job today?</p>
-            <span class="label-text">HOURS WORKED</span>
-            <input type="number" step="0.1" id="prompt-work-hours" placeholder="e.g. 8">
+            <input type="number" step="0.1" id="prompt-work-hours" placeholder="Hours worked (e.g. 8)">
             <button class="btn btn-yellow" onclick="logWorkShift(true)">Yes (+20m Blue)</button>
             <button class="btn btn-ghost" onclick="closeWorkPrompt()">No / Skip</button>
         </div>
@@ -50,16 +49,16 @@
         <div class="card"><h3 style="margin:0; text-align:center;">Free Time Bank</h3><div class="balance" id="bal">0m</div></div>
 
         <div id="active-work-timer" class="card hidden" style="border: 2px solid var(--green);">
-            <small style="color:var(--green); font-weight:bold;">GROWING...</small>
-            <h3 id="work-timer-name-display">Task</h3>
+            <small style="color:var(--green); font-weight:bold;">TRACKING GROWTH:</small>
+            <h3 id="work-timer-name-display" style="margin:5px 0;">Task</h3>
             <h2 id="work-timer-clock" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
             <button class="btn btn-green" onclick="stopWorkTimer()">Stop & Log</button>
         </div>
 
         <div id="active-blue-timer" class="card hidden" style="border: 2px solid var(--blue);">
-            <small style="color:var(--blue); font-weight:bold;">SPENDING...</small>
+            <small style="color:var(--blue); font-weight:bold;">SPENDING BLUE TIME:</small>
             <h2 id="blue-timer-display" style="text-align:center; font-size:3rem; margin:10px 0;">00:00</h2>
-            <button class="btn btn-blue" onclick="stopFreeTime()">Stop Session</button>
+            <button class="btn btn-blue" onclick="stopFreeTime()">Stop & Deduct</button>
         </div>
 
         <button class="btn btn-green" onclick="showScreen('log-activity')">⚡ Log Activity / Backdate</button>
@@ -76,28 +75,25 @@
     <div id="log-activity" class="hidden">
         <div class="card">
             <h2>Log Activity</h2>
-            <span class="label-text">DATE</span>
-            <input type="date" id="log-date">
-            <span class="label-text">CHOOSE TASK</span>
-            <select id="task-select" onchange="handleTaskDropdownChange(this.value)"></select>
+            <span class="label-text">DATE</span><input type="date" id="log-date">
+            <span class="label-text">ACTIVITY</span><select id="task-select" onchange="handleTaskDropdownChange(this.value)"></select>
 
             <div id="new-task-fields" class="hidden">
-                <input type="text" id="new-name" placeholder="Task Name">
+                <input type="text" id="new-name" placeholder="Name">
                 <input list="category-list" id="new-cat" placeholder="Category">
                 <span class="label-text">PRIORITY (1-5) <span id="log-ratio-display" class="ratio-badge">1.0x</span></span>
                 <input type="number" id="new-pri-manual" value="3" min="1" max="5" oninput="updateRatio('log-ratio-display', this.value)">
-                <label><input type="checkbox" id="save-to-lib"> Save to Library?</label>
+                <label><input type="checkbox" id="save-to-lib"> Save as Library Template?</label>
             </div>
 
             <div id="manual-job-fields" class="hidden card" style="background:#fffdf0; border:1px solid var(--yellow);">
-                <span class="label-text">JOB HOURS</span>
-                <input type="number" step="0.1" id="manual-job-hours" placeholder="e.g. 7.5">
+                <span class="label-text">HOURS WORKED</span><input type="number" step="0.1" id="manual-job-hours">
             </div>
 
             <div id="log-duration-card" class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
                 <span class="label-text">DURATION (MINUTES)</span>
                 <input type="number" id="log-val" value="30">
-                <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Finished Goal?</label>
+                <label id="complete-check-label" class="hidden"><input type="checkbox" id="is-complete"> Mark Goal Finished?</label>
                 <button class="btn btn-green" onclick="submitLog('manual')">Save Entry</button>
             </div>
 
@@ -111,7 +107,7 @@
     <div id="planner" class="hidden">
         <div class="card">
             <h2>Task Planner</h2>
-            <button class="btn btn-green" onclick="openTodoModal()">+ New Goal</button>
+            <button class="btn btn-green" onclick="openTodoModal()">+ New Target Goal</button>
             <hr><div id="todo-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -119,10 +115,10 @@
 
     <div id="manage-tasks" class="hidden">
         <div class="card">
-            <h2>Library templates</h2>
+            <h2>Library</h2>
             <button class="btn btn-blue" onclick="openLibModal()">+ New Template</button>
             <hr>
-            <input type="text" id="lib-search" placeholder="Search..." oninput="renderLibrary()" style="border:2px solid var(--blue)">
+            <input type="text" id="lib-search" placeholder="Search..." oninput="renderLibrary()">
             <div id="task-list-container"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -131,7 +127,7 @@
     <div id="history" class="hidden">
         <div class="card">
             <h2>History</h2>
-            <input type="text" id="history-search" placeholder="Search logs..." oninput="renderHistory()" style="border:2px solid var(--green)">
+            <input type="text" id="history-search" placeholder="Search..." oninput="renderHistory()">
             <div id="history-list"></div>
             <button class="btn btn-ghost" onclick="showScreen('home')">Back</button>
         </div>
@@ -169,9 +165,10 @@
         <div class="card" style="width:90%; max-width:400px;">
             <h3>Manage Goal</h3>
             <input type="hidden" id="edit-todo-id">
-            <input type="text" id="todo-name" placeholder="Goal Name">
-            <input list="category-list" id="todo-cat" placeholder="Category">
-            <label><input type="checkbox" id="todo-recurring"> Recurring Goal? 🔁</label>
+            <span class="label-text">GOAL NAME</span><input type="text" id="todo-name">
+            <span class="label-text">CATEGORY</span><input list="category-list" id="todo-cat">
+            <span class="label-text">DUE DATE</span><input type="date" id="todo-date">
+            <label><input type="checkbox" id="todo-recurring"> Recurring Monthly? 🔁</label>
             <button class="btn btn-green" onclick="saveTodo()">Save</button>
             <button class="btn btn-ghost" onclick="closeTodoModal()">Cancel</button>
         </div>
@@ -226,8 +223,8 @@
         }
 
         function populateDropdown() {
-            let opts = '<option value="new">+ One-Off Log</option><option value="yellow-manual">+ Log Job Shift (Yellow)</option><option value="blue-manual">+ Manual Blue Time (Retroactive)</option>';
-            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[P] ${t.name}</option>`);
+            let opts = '<option value="new">+ One-Off Log</option><option value="yellow-manual">+ Manual Job Shift (Yellow)</option><option value="blue-manual">+ Manual Blue Time (Retroactive)</option>';
+            data.todos.forEach(t => opts += `<option value="todo-${t.id}">[Goal] ${t.name}</option>`);
             data.tasks.forEach(t => opts += `<option value="lib-${t.name}">${t.name}</option>`);
             document.getElementById('task-select').innerHTML = opts;
             handleTaskDropdownChange('new');
@@ -273,7 +270,15 @@
             let reward = Math.floor(mins * (0.4 + (s.pri * 0.2)));
             if(s.isTodo) {
                 let t = data.todos.find(x => x.id == s.todoId); if(t) t.timeInvested += mins;
-                if(finished && t) { reward += (s.pri * 10); if(!t.recurring) data.todos = data.todos.filter(x => x.id != s.todoId); }
+                if(finished && t) { 
+                    reward += (s.pri * 10); 
+                    if(t.recurring) {
+                        let oldD = t.dueDate ? new Date(t.dueDate) : new Date();
+                        let nextM = new Date(oldD.getFullYear(), oldD.getMonth() + 1, oldD.getDate());
+                        t.dueDate = nextM.toISOString().split('T')[0];
+                        t.timeInvested = 0;
+                    } else { data.todos = data.todos.filter(x => x.id != s.todoId); }
+                }
             }
             data.balance += reward;
             data.logs.push({ name: s.name, cat: s.cat, reward, timeSpent: mins, date: customDate, logId: Date.now() });
@@ -287,32 +292,29 @@
         }
         function closeWorkPrompt() { data.lastWorkCheck = new Date().toDateString(); save(); document.getElementById('work-prompt-modal').classList.add('hidden'); }
 
-        // --- MANAGERS ---
         function renderLibrary() { const q = document.getElementById('lib-search').value.toLowerCase(); document.getElementById('task-list-container').innerHTML = data.tasks.map((t, i) => t.name.toLowerCase().includes(q) ? `<div class="list-item"><span><strong>${t.name}</strong><br><small>${t.cat} | P${t.pri}</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="openLibModal(${i})">Edit</button><button class="btn-ghost" onclick="deleteLib(${i})">Del</button></div></div>` : '').join(''); }
         function openLibModal(idx = -1) { document.getElementById('lib-modal').classList.remove('hidden'); if(idx === -1) { document.getElementById('lib-edit-index').value = "-1"; document.getElementById('lib-name').value = ""; document.getElementById('lib-cat').value = ""; updateRatio('lib-ratio-display', 3); } else { const t = data.tasks[idx]; document.getElementById('lib-edit-index').value = idx; document.getElementById('lib-name').value = t.name; document.getElementById('lib-cat').value = t.cat; document.getElementById('lib-pri').value = t.pri; updateRatio('lib-ratio-display', t.pri); } }
         function saveLibraryItem() { const i = parseInt(document.getElementById('lib-edit-index').value); const t = { name: document.getElementById('lib-name').value, cat: document.getElementById('lib-cat').value || 'General', pri: parseInt(document.getElementById('lib-pri').value) || 3 }; if(i === -1) data.tasks.push(t); else data.tasks[i] = t; save(); renderLibrary(); closeLibModal(); }
         function deleteLib(i) { if(confirm("Delete?")) { data.tasks.splice(i,1); save(); renderLibrary(); } }
         function closeLibModal() { document.getElementById('lib-modal').classList.add('hidden'); }
 
-        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m</small></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="openTodoModal(${t.id})">Edit</button><button class="btn-ghost" onclick="deleteTodo(${t.id})">Del</button></div></div>`).join('') || "Planner empty."; }
-        function openTodoModal(id = null) { document.getElementById('todo-modal').classList.remove('hidden'); if(!id) { document.getElementById('edit-todo-id').value = ""; document.getElementById('todo-name').value = ""; document.getElementById('todo-cat').value = ""; } else { const t = data.todos.find(x => x.id == id); document.getElementById('edit-todo-id').value = t.id; document.getElementById('todo-name').value = t.name; document.getElementById('todo-cat').value = t.cat; document.getElementById('todo-recurring').checked = t.recurring; } }
-        function saveTodo() { const id = document.getElementById('edit-todo-id').value; const t = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 }; if(id) { let idx = data.todos.findIndex(x => x.id == id); t.timeInvested = data.todos[idx].timeInvested; data.todos[idx] = t; } else data.todos.push(t); save(); renderPlanner(); closeTodoModal(); }
+        function renderPlanner() { document.getElementById('todo-list').innerHTML = data.todos.map(t => `<div class="list-item"><span>${t.recurring?'🔁':'📌'} <strong>${t.name}</strong><br><small>${t.cat} | ${t.timeInvested}m invest</small><br><span class="date-badge">${t.dueDate || 'No Date'}</span></span><div style="display:flex; gap:5px;"><button class="btn-ghost" onclick="openTodoModal(${t.id})">Edit</button><button class="btn-ghost" onclick="deleteTodo(${t.id})">Del</button></div></div>`).join('') || "Planner empty."; }
+        function openTodoModal(id = null) { document.getElementById('todo-modal').classList.remove('hidden'); if(!id) { document.getElementById('edit-todo-id').value = ""; document.getElementById('todo-name').value = ""; document.getElementById('todo-cat').value = ""; document.getElementById('todo-date').value = ""; } else { const t = data.todos.find(x => x.id == id); document.getElementById('edit-todo-id').value = t.id; document.getElementById('todo-name').value = t.name; document.getElementById('todo-cat').value = t.cat; document.getElementById('todo-date').value = t.dueDate || ""; document.getElementById('todo-recurring').checked = t.recurring; } }
+        function saveTodo() { const id = document.getElementById('edit-todo-id').value; const t = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('todo-name').value, cat: document.getElementById('todo-cat').value || 'General', dueDate: document.getElementById('todo-date').value, recurring: document.getElementById('todo-recurring').checked, timeInvested: 0, pri: 3 }; if(id) { let idx = data.todos.findIndex(x => x.id == id); t.timeInvested = data.todos[idx].timeInvested; data.todos[idx] = t; } else data.todos.push(t); save(); renderPlanner(); closeTodoModal(); }
         function deleteTodo(id) { if(confirm("Delete?")) { data.todos = data.todos.filter(x => x.id != id); save(); renderPlanner(); } }
         function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
 
-        function renderHistory() { const q = document.getElementById('history-search').value.toLowerCase(); document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,30).map(l => `<div class="list-item ${l.isYellow ? 'history-yellow' : (l.reward >= 0 ? 'history-green' : 'history-blue')}"><span><strong>${l.name}</strong><br><small>Spent: ${l.timeSpent}m | Earned: ${l.reward}m</small></span><button class="btn-ghost" onclick="undoLog(${l.logId})">Undo</button></div>`).join(''); }
+        function renderHistory() { const q = document.getElementById('history-search').value.toLowerCase(); document.getElementById('history-list').innerHTML = [...data.logs].reverse().filter(l => l.name.toLowerCase().includes(q)).slice(0,30).map(l => `<div class="list-item ${l.isYellow ? 'history-yellow' : (l.reward >= 0 ? 'history-green' : 'history-blue')}"><span><strong>${l.name}</strong><br><small>Earned: ${l.reward}m</small></span><button class="btn-ghost" onclick="undoLog(${l.logId})">Undo</button></div>`).join(''); }
         function undoLog(id) { if(confirm("Undo?")) { const i = data.logs.findIndex(x => x.logId == id); data.balance -= data.logs[i].reward; data.logs.splice(i,1); save(); renderHistory(); } }
         
-        // --- REPORTS & EMAIL ---
         function toggleReportView() { reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro'; document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic Colors' : 'Detailed Categories'}`; generateReport(); }
-        function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
+        function setReportTab(t) { currentTab = t; generateReport(); }
         function generateReport() {
-            const targetDate = new Date(); targetDate.setDate(targetDate.getDate() + reportOffset);
             let yellow = 0, green = 0, spent = 0, cats = {};
             let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
             const filtered = data.logs.filter(l => {
                 const ld = new Date(l.date);
-                if(currentTab === 'today') return ld.toDateString() === targetDate.toDateString();
+                if(currentTab === 'today') return ld.toDateString() === new Date().toDateString();
                 if(currentTab === 'week') return (new Date() - ld) < 7*86400000;
                 return ld.getMonth() === new Date().getMonth();
             });
