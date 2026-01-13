@@ -326,8 +326,7 @@
         function setReportTab(t) { currentTab = t; reportOffset = 0; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); generateReport(); }
         function toggleReportView() { reportViewMode = (reportViewMode === 'macro') ? 'detail' : 'macro'; document.getElementById('toggle-view-btn').innerText = `View: ${reportViewMode === 'macro' ? 'Basic' : 'Detailed'}`; generateReport(); }
         
-        function generateReport() {
-    // 1. Setup the Date
+       function generateReport() {
     const targetDate = new Date(); 
     if(currentTab === 'today') targetDate.setDate(targetDate.getDate() + reportOffset);
     if(currentTab === 'week') targetDate.setDate(targetDate.getDate() + (reportOffset * 7));
@@ -336,17 +335,17 @@
     const labelEl = document.getElementById('current-report-label');
     const targetLocalString = targetDate.toLocaleDateString();
     
-    if(reportOffset === 0) {
-        labelEl.innerText = currentTab === 'today' ? "Today" : (currentTab === 'week' ? "This Week" : "This Month");
-    } else {
-        labelEl.innerText = targetLocalString;
+    if(labelEl) {
+        if(reportOffset === 0) {
+            labelEl.innerText = currentTab === 'today' ? "Today" : (currentTab === 'week' ? "This Week" : "This Month");
+        } else {
+            labelEl.innerText = targetLocalString;
+        }
     }
 
-    // 2. Initialize Counters
     let yellow = 0, green = 0, spent = 0, cats = {};
     let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
 
-    // 3. Filter Logs
     const filtered = data.logs.filter(l => {
         const ld = new Date(l.date);
         if(currentTab === 'today') return ld.toLocaleDateString() === targetLocalString;
@@ -357,28 +356,25 @@
         return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
     });
 
-    // 4. Sum the Time
     filtered.forEach(l => {
         const isJob = l.isYellow || (l.cat && l.cat.toLowerCase() === 'job');
         if(isJob) {
             yellow += l.timeSpent;
         } else if(l.reward >= 0) {
             green += l.timeSpent;
-            let categoryName = l.cat || "General";
-            cats[categoryName] = (cats[categoryName] || 0) + l.timeSpent;
+            let cName = l.cat || "General";
+            cats[cName] = (cats[cName] || 0) + l.timeSpent;
         } else {
             spent += Math.abs(l.timeSpent);
         }
     });
 
-    // 5. Calculate Grey Space & Total
     let grey = Math.max(0, periodMins - (yellow + green + spent));
     let total = yellow + green + spent + grey;
-    if (total <= 0) total = 1440; // Fallback to 1 day if total is somehow 0
+    if (total <= 0) total = 1; 
 
     let slices = [], legendItems = '';
 
-    // 6. Build Chart (Macro or Detail)
     if (reportViewMode === 'macro') {
         slices = [
             `var(--yellow) 0deg ${(yellow/total)*360}deg`,
@@ -394,48 +390,50 @@
     } else {
         let curDeg = 0;
         if(yellow > 0) {
-            let deg = (yellow/total)*360;
-            slices.push(`var(--yellow) ${curDeg}deg ${curDeg + deg}deg`);
-            curDeg += deg;
+            let d = (yellow/total)*360;
+            slices.push(`var(--yellow) ${curDeg}deg ${curDeg+d}deg`);
+            curDeg += d;
         }
         legendItems += `<div class="legend-item"><span class="dot" style="background:var(--yellow)"></span>Job: ${yellow}m</div>`;
         
-        const catKeys = Object.keys(cats);
-        catKeys.forEach((c, i) => {
-            let deg = (cats[c]/total)*360;
-            let clr = `hsl(${i * (360 / Math.max(catKeys.length, 1))}, 70%, 45%)`;
-            slices.push(`${clr} ${curDeg}deg ${curDeg + deg}deg`);
-            curDeg += deg;
+        Object.keys(cats).forEach((c, i) => {
+            let d = (cats[c]/total)*360;
+            let clr = `hsl(${i * (360 / Math.max(Object.keys(cats).length, 1))}, 70%, 45%)`;
+            slices.push(`${clr} ${curDeg}deg ${curDeg+d}deg`);
+            curDeg += d;
             legendItems += `<div class="legend-item"><span class="dot" style="background:${clr}"></span>${c}: ${cats[c]}m</div>`;
         });
 
         if(spent > 0) {
-            let deg = (spent/total)*360;
-            slices.push(`var(--blue) ${curDeg}deg ${curDeg + deg}deg`);
-            curDeg += deg;
+            let d = (spent/total)*360;
+            slices.push(`var(--blue) ${curDeg}deg ${curDeg+d}deg`);
+            curDeg += d;
         }
         legendItems += `<div class="legend-item"><span class="dot" style="background:var(--blue)"></span>Spent: ${spent}m</div>`;
         slices.push(`var(--grey) ${curDeg}deg 360deg`);
         legendItems += `<div class="legend-item"><span class="dot" style="background:var(--grey)"></span>Grey: ${grey}m</div>`;
     }
 
-    // 7. Render Pie & Legend
-    document.getElementById('report-content').innerHTML = `
-        <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
-        <div class="legend">${legendItems}</div>`;
-
-    // 8. Render Pending Goals (From previous fix)
-    const pending = data.todos.filter(t => !t.dueDate || new Date(t.dueDate) >= new Date() || t.timeInvested > 0);
-    let pendingHtml = '<h4>Pending Goals</h4>';
-    if (pending.length === 0) {
-        pendingHtml += '<p style="font-size:0.8rem; color:#888;">No active goals.</p>';
-    } else {
-        pending.forEach(t => {
-            pendingHtml += `<div style="font-size:0.8rem; padding:8px; background:#f0f0f0; border-radius:6px; margin-bottom:5px; display:flex; justify-content:space-between;">
-                <span>${t.name}</span><span style="color:var(--blue); font-weight:bold;">${t.timeInvested || 0}m</span></div>`;
-        });
+    const reportContent = document.getElementById('report-content');
+    if(reportContent) {
+        reportContent.innerHTML = `
+            <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>
+            <div class="legend">${legendItems}</div>`;
     }
-    document.getElementById('report-pending-goals').innerHTML = pendingHtml;
+
+    const pendingEl = document.getElementById('report-pending-goals');
+    if(pendingEl) {
+        const pending = data.todos.filter(t => !t.dueDate || new Date(t.dueDate) >= new Date() || t.timeInvested > 0);
+        let phtml = '<h4>Pending Goals</h4>';
+        if (pending.length === 0) phtml += '<p style="font-size:0.8rem; color:#888;">No active goals.</p>';
+        else {
+            pending.forEach(t => {
+                phtml += `<div style="font-size:0.8rem; padding:8px; background:#f0f0f0; border-radius:6px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>${t.name}</span><span style="color:var(--blue); font-weight:bold;">${t.timeInvested || 0}m</span></div>`;
+            });
+        }
+        pendingEl.innerHTML = phtml;
+    }
 }
    // 1. Normalize target date to midnight local time for accurate comparison
     const targetString = targetDate.toLocaleDateString();
@@ -575,6 +573,7 @@
     </script>
 </body>
 </html>
+
 
 
 
