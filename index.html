@@ -114,9 +114,10 @@
             </div>
 
             <div id="manual-job-fields" class="hidden card" style="background:#fffdf0; border:1px solid var(--yellow);">
-                <span class="label-text">HOURS WORKED</span><input type="number" step="0.1" id="manual-job-hours">
-            </div>
-
+    <span class="label-text">HOURS WORKED</span>
+    <input type="number" step="0.1" id="manual-job-hours" placeholder="e.g. 8">
+    <button class="btn btn-yellow" onclick="submitLog('manual')">Save Job Shift</button> 
+</div>
             <div id="log-duration-card" class="card" style="background:#f9f9f9; border: 1px solid #ddd;">
                 <span class="label-text">DURATION (MINUTES)</span>
                 <input type="number" id="log-val" value="30">
@@ -452,6 +453,7 @@
     </script>
 </body>
 </html>
+
 
 
 
