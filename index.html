@@ -342,9 +342,13 @@
     let yellow = 0, green = 0, spent = 0, cats = {};
     let periodMins = (currentTab === 'today') ? 1440 : (currentTab === 'week' ? 10080 : 43200);
 
+   // 1. Normalize target date to midnight local time for accurate comparison
+    const targetString = targetDate.toLocaleDateString();
+
     const filtered = data.logs.filter(l => {
         const ld = new Date(l.date);
-        if(currentTab === 'today') return ld.toDateString() === targetDate.toDateString();
+        if(currentTab === 'today') return ld.toLocaleDateString() === targetString;
+        
         if(currentTab === 'week') {
             const diff = (targetDate - ld) / 86400000;
             return diff >= 0 && diff < 7;
@@ -353,7 +357,10 @@
     });
 
     filtered.forEach(l => {
-        if(l.isYellow || (l.cat && l.cat.toLowerCase() === 'job')) {
+        // Safe check for category to prevent crashes
+        const category = (l.cat || "").toLowerCase();
+        
+        if(l.isYellow || category === 'job' || category === 'work') {
             yellow += l.timeSpent;
         } else if(l.reward >= 0) {
             green += l.timeSpent;
@@ -453,6 +460,7 @@
     </script>
 </body>
 </html>
+
 
 
 
