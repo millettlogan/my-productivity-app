@@ -348,21 +348,39 @@
    // 1. Normalize target date to a YYYY-MM-DD string
     const targetYYYYMMDD = targetDate.toISOString().split('T')[0];
 
+    // 1. Get the local date string for the target (e.g., "1/13/2026")
+    const targetLocal = targetDate.toLocaleDateString();
+
     const filtered = data.logs.filter(l => {
-        // Convert the log date to the same YYYY-MM-DD format for a perfect string match
-        const logDateOnly = new Date(l.date).toISOString().split('T')[0];
+        const logDateObj = new Date(l.date);
+        const logLocal = logDateObj.toLocaleDateString();
         
-        if(currentTab === 'today') return logDateOnly === targetYYYYMMDD;
+        // Today view: Compare local strings
+        if(currentTab === 'today') return logLocal === targetLocal;
         
+        // Weekly view: Check if log is within the last 7 days of target
         if(currentTab === 'week') {
-            const diff = (targetDate - new Date(l.date)) / 86400000;
+            const diff = (targetDate - logDateObj) / 86400000;
             return diff >= 0 && diff < 7;
         }
-        // Monthly match
-        const ld = new Date(l.date);
-        return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
+        
+        // Monthly view
+        return logDateObj.getMonth() === targetDate.getMonth() && 
+               logDateObj.getFullYear() === targetDate.getFullYear();
     });
 
+    // 2. Summing logic (Ensure 'Job' is detected)
+    filtered.forEach(l => {
+        if(l.isYellow === true || l.cat === 'Job') {
+            yellow += l.timeSpent;
+        } else if(l.reward >= 0) {
+            green += l.timeSpent;
+            let categoryName = l.cat || "General";
+            cats[categoryName] = (cats[categoryName] || 0) + l.timeSpent;
+        } else {
+            spent += Math.abs(l.timeSpent); // Use timeSpent for the pie chart
+        }
+    });
     filtered.forEach(l => {
         // Check specifically for the 'Job' category or the yellow flag
         if(l.isYellow === true || l.cat === 'Job') {
@@ -462,6 +480,7 @@
     </script>
 </body>
 </html>
+
 
 
 
