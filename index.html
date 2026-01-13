@@ -345,22 +345,27 @@
    // 1. Normalize target date to midnight local time for accurate comparison
     const targetString = targetDate.toLocaleDateString();
 
+   // 1. Normalize target date to a YYYY-MM-DD string
+    const targetYYYYMMDD = targetDate.toISOString().split('T')[0];
+
     const filtered = data.logs.filter(l => {
-        const ld = new Date(l.date);
-        if(currentTab === 'today') return ld.toLocaleDateString() === targetString;
+        // Convert the log date to the same YYYY-MM-DD format for a perfect string match
+        const logDateOnly = new Date(l.date).toISOString().split('T')[0];
+        
+        if(currentTab === 'today') return logDateOnly === targetYYYYMMDD;
         
         if(currentTab === 'week') {
-            const diff = (targetDate - ld) / 86400000;
+            const diff = (targetDate - new Date(l.date)) / 86400000;
             return diff >= 0 && diff < 7;
         }
+        // Monthly match
+        const ld = new Date(l.date);
         return ld.getMonth() === targetDate.getMonth() && ld.getFullYear() === targetDate.getFullYear();
     });
 
     filtered.forEach(l => {
-        // Safe check for category to prevent crashes
-        const category = (l.cat || "").toLowerCase();
-        
-        if(l.isYellow || category === 'job' || category === 'work') {
+        // Check specifically for the 'Job' category or the yellow flag
+        if(l.isYellow === true || l.cat === 'Job') {
             yellow += l.timeSpent;
         } else if(l.reward >= 0) {
             green += l.timeSpent;
@@ -370,9 +375,6 @@
             spent += Math.abs(l.timeSpent);
         }
     });
-
-    let grey = Math.max(0, periodMins - (yellow + green + spent));
-    const total = yellow + green + spent + grey;
     let slices = [], legendItems = '';
 
     if (reportViewMode === 'macro') {
@@ -460,6 +462,7 @@
     </script>
 </body>
 </html>
+
 
 
 
